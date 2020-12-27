@@ -1,0 +1,12 @@
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### CDR ###
+venv/
+config/
+data/
+log/
+test.py
