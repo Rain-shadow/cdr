@@ -23,7 +23,7 @@ def __my_except_hook(exc_type, exc_value, tb):
 
     Log.v("")
     Log.e(msg, is_show=False)
-    if isinstance(exc_type, ReadTimeout):
+    if isinstance(exc_type, ReadTimeout) or isinstance(exc_type, ConnectionError):
         Log.e("网路不稳定，请待网路恢复后重启程序，按回车键退出程序")
     else:
         Log.e("未知异常，请上报此错误（error-last.txt）给GM，按回车键退出程序")

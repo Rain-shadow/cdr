@@ -154,6 +154,7 @@ class MyselfTask(CDRTask):
                 if settings.is_multiple_task:
                     Log.i(json_data, is_show=False)
                     self.add_progress(task['list_id'], task['task_name'])
+                    self.update_progress(task['list_id'], 0)
                     Log.i(f"Key: {task['list_id']}, Total: {json_data['data']['topic_total']}", is_show=False)
                 # 提交做题
                 #   code=20004时代表当前题目已做完，测试任务完成标志

@@ -131,13 +131,13 @@ class CDRTask:
                 tem_list = answer_id
                 for i in range(0, data["answer_num"]):
                     answer_id = tem_list[i]
-                    topic_code, is_skip = CDRTask.verify_answer(answer_id, topic_code, type_mode[type_id])
+                    topic_code = CDRTask.verify_answer(answer_id, topic_code, type_mode[type_id])
                     if not settings.is_random_time:
                         time.sleep(0.1)
                     else:
                         time.sleep(0.6)
             else:
-                topic_code, is_skip = CDRTask.verify_answer(answer_id, topic_code, type_mode[type_id])
+                topic_code = CDRTask.verify_answer(answer_id, topic_code, type_mode[type_id])
         except AnswerWrong as e:
             Log.w(e)
             Log.w("请携带error.txt寻找GM排除适配问题")
@@ -145,6 +145,8 @@ class CDRTask:
             Log.create_error_txt()
             topic_code = e.topic_code
             input("等待错误检查（按下回车键即可继续执行）")
+            if e.is_skip:
+                return CDRTask.skip_answer(topic_code, topic_mode, type_mode[type_id])
         else:
             Log.v("   Done！", is_show=is_show)
         timestamp = Tool.time()
@@ -227,11 +229,8 @@ class CDRTask:
             Log.v("")
             Log.w("答案错误！")
             Log.w(json_data, is_show=False)
-            raise AnswerWrong(data, json_data['data']['topic_code'])
-        topic_code = json_data['data']['topic_code']
-        if json_data['data']["over_status"] == 2:
-            return topic_code, True
-        return topic_code, False
+            raise AnswerWrong(data, json_data['data']['topic_code'], json_data['data']["over_status"] == 2)
+        return json_data['data']['topic_code']
 
     @staticmethod
     def skip_answer(topic_code: str, topic_mode: int, type_mode: str) -> dict:

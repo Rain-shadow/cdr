@@ -237,8 +237,8 @@ class Answer:
                     if remark == matcher.group(1):
                         return key
             else:
-                for content in value["content"]:
-                    usages = content["usage"].get(remark) or adapter.usage_get_remark(content["usage"], remark)
+                for content_list in value["content"]:
+                    usages = content_list["usage"].get(remark) or adapter.usage_get_remark(content_list["usage"], remark)
                     if usages is not None:
                         for usage in usages:
                             if len(usage_list) - 1 != len(usage_list_set & Set(usage)):
