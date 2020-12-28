@@ -41,7 +41,7 @@ class Login:
             time.sleep(5)
             if count == 6:
                 count = 0
-                Log.i("1. 继续等待\n2. 重新生成二维码\n\n0. 返回上一级")
+                Log.v("1. 继续等待\n2. 重新生成二维码\n\n0. 返回上一级")
                 code_type = input("请输入指令：")
                 if code_type == "1":
                     continue

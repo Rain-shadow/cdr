@@ -58,7 +58,7 @@ def do_homework():
             MyselfTask(json['user_info']['course_id']).run()
             Tool.cls()
         elif choose == "3":
-            settings.r["userToken"] = ""
+            settings.user_token = ""
             settings.save()
             Login()
             Tool.cls()

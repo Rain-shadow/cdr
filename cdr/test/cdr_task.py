@@ -138,7 +138,7 @@ class CDRTask:
         except AnswerWrong as e:
             Log.w(e)
             Log.w("请携带error.txt寻找GM排除适配问题")
-            Log.w(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error.txt")
+            Log.w(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt")
             Log.create_error_txt()
             topic_code = e.topic_code
             input("等待错误检查（按下回车键即可继续执行）")
@@ -253,7 +253,7 @@ class CDRTask:
 
     @staticmethod
     def wait_admin_choose():
-        Log.w("\n建议携带error.txt反馈至负责人，由负责人排查BUG后继续"
+        Log.w("\n建议携带error-last.txt反馈至负责人，由负责人排查BUG后继续"
               f"\n你可以在“main{LOG_DIR_PATH[1:]}”下找到error.txt")
         Log.v("1. 以超时方式跳过本题\n2. 自主选择答案（待开发）\n"
               "#. 建议反馈此问题（该项不是选项），若要反馈此BUG，请不要选择选项1\n\n0. 结束程序")
