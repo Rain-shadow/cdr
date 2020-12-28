@@ -7,8 +7,8 @@
 ### CDR ###
 venv/
 ./config/
-data/
-log/
+./data/
+./log/
 *.txt
 *.ico
 *.bat
