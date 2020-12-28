@@ -48,7 +48,6 @@ class Settings:
                 "offsetScore": 1,
                 "version": self.version - 1
             }
-            self.save()
         else:
             with open(CONFIG_DIR_PATH + "config.txt", mode='r', encoding='utf-8') as cfg:
                 s_json = json.loads(cfg.read())
@@ -91,6 +90,7 @@ class Settings:
         self.version = s_json["version"]
         self._note = s_json["#"]
         self.timeout = 25
+        self.save()
 
     def __new__(cls, *args, **kwargs):
         if not hasattr(Settings, "_instance"):
