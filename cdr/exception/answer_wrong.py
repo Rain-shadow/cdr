@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
+# cython : language_level=3
 # @Time  : 2020-12-27, 0027 12:25
 # @Author: 佚名
 # @File  : answer_wrong.py

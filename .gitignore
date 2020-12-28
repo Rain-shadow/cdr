@@ -6,9 +6,12 @@
 
 ### CDR ###
 venv/
-./config/*
-./data/*
+__pycache__/
+build/*
+config/*
+data/*
 ./log/*
+*.pyd
 *.txt
 *.ico
 *.bat

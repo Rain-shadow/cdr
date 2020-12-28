@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
+# cython : language_level=3
 # @Time  : 2020-12-19, 0019 15:32
 # @Author: 佚名
 # @File  : core.py
-# cython: language_level=3
-# -*- coding: utf-8 -*-
 import requests
 import sys
 import time

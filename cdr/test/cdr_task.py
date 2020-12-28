@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
+# cython: language_level=3
 # @Time  : 2020-12-25, 0025 10:10
 # @Author: 佚名
 # @File  : cdr_task.py
@@ -119,33 +120,34 @@ class CDRTask:
                 Log.create_error_txt()
                 input("等待错误检查（按下回车键键即可继续执行）")
         except AnswerNotFoundException as e:
-            Log.w(f"\n{e}")
+            Log.w(f"{e}")
             CDRTask.wait_admin_choose()
             is_skip = True
-        # 答案验证
-        try:
-            if topic_mode == 31:
-                tem_list = answer_id
-                for i in range(0, data["answer_num"]):
-                    answer_id = tem_list[i]
-                    topic_code, is_skip = CDRTask.verify_answer(answer_id, topic_code, type_mode[type_id])
-                    if not settings.is_random_time:
-                        time.sleep(0.1)
-                    else:
-                        time.sleep(0.6)
-            else:
-                topic_code, is_skip = CDRTask.verify_answer(answer_id, topic_code, type_mode[type_id])
-        except AnswerWrong as e:
-            Log.w(e)
-            Log.w("请携带error.txt寻找GM排除适配问题")
-            Log.w(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt")
-            Log.create_error_txt()
-            topic_code = e.topic_code
-            input("等待错误检查（按下回车键即可继续执行）")
-        else:
-            Log.v("   Done！", is_show=is_show)
         if is_skip:
             return CDRTask.skip_answer(topic_code, topic_mode, type_mode[type_id])
+        else:
+            # 答案验证
+            try:
+                if topic_mode == 31:
+                    tem_list = answer_id
+                    for i in range(0, data["answer_num"]):
+                        answer_id = tem_list[i]
+                        topic_code, is_skip = CDRTask.verify_answer(answer_id, topic_code, type_mode[type_id])
+                        if not settings.is_random_time:
+                            time.sleep(0.1)
+                        else:
+                            time.sleep(0.6)
+                else:
+                    topic_code, is_skip = CDRTask.verify_answer(answer_id, topic_code, type_mode[type_id])
+            except AnswerWrong as e:
+                Log.w(e)
+                Log.w("请携带error.txt寻找GM排除适配问题")
+                Log.w(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt")
+                Log.create_error_txt()
+                topic_code = e.topic_code
+                input("等待错误检查（按下回车键即可继续执行）")
+            else:
+                Log.v("   Done！", is_show=is_show)
         timestamp = Tool.time()
         sign = Tool.md5(f"time_spent={time_spent}&timestamp={timestamp}&topic_code={topic_code}"
                         + f"&versions={CDR_VERSION}ajfajfamsnfaflfasakljdlalkflak")
@@ -254,7 +256,7 @@ class CDRTask:
     @staticmethod
     def wait_admin_choose():
         Log.w("\n建议携带error-last.txt反馈至负责人，由负责人排查BUG后继续"
-              f"\n你可以在“main{LOG_DIR_PATH[1:]}”下找到error.txt")
+              f"\n你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt")
         Log.v("1. 以超时方式跳过本题\n2. 自主选择答案（待开发）\n"
               "#. 建议反馈此问题（该项不是选项），若要反馈此BUG，请不要选择选项1\n\n0. 结束程序")
         Log.create_error_txt()

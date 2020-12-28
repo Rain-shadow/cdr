@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
+# cython : language_level=3
 # @Time  : 2020-12-20, 0020 22:29
 # @Author: 佚名
 # @File  : tool.py
