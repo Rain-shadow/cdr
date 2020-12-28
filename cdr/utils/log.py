@@ -6,24 +6,32 @@
 import sys
 import time
 import os
+from threading import Lock
 from cdr.config import LOG_DIR_PATH
 
 __all__ = ["Log"]
-
+_lock = Lock()
+_lock.acquire()
 __file = open(f"{LOG_DIR_PATH}log.txt", "w", encoding='utf-8')
+_lock.release()
 
 
 def _log(txt, end='\n'):
     global __file
+    _lock.acquire()
     print(txt, file=__file, end=end)
+    _lock.release()
 
 
 def _file_close():
+    _lock.acquire()
     __file.close()
+    _lock.release()
 
 
 def _create_error_txt():
     global __file
+    _lock.acquire()
     __file.flush()
     sys.stdout.flush()
     __file.close()
@@ -31,6 +39,7 @@ def _create_error_txt():
               f'{time.strftime("%Y-%m-%d-%H.%M.%S", time.localtime())}.txt" > nul')
     os.system(f'copy {LOG_DIR_PATH}log.txt "{LOG_DIR_PATH}error-last.txt" > nul')
     __file = open(f"{LOG_DIR_PATH}log.txt", "a", encoding='utf-8')
+    _lock.release()
 
 
 class Log:

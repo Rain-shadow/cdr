@@ -24,7 +24,6 @@ class Settings:
 
     def __init__(self):
         self.version = 6
-        s_json = None
         if os.path.exists(CONFIG_DIR_PATH + "config.txt") \
                 and _get_encode_info(CONFIG_DIR_PATH + "config.txt") != "utf-8":
             Log.w("检测到配置文件格式有误，自动转换文件格式")
@@ -42,6 +41,7 @@ class Settings:
                              + 'MicroMessenger/7.0.13.1640(0x27000D39) Process/tools NetType/WIFI Language/zh_CN ABI/arm64 WeChat/arm64',
                 "isRandomTime": True,
                 "isRandomScore": False,
+                "multipleTask": 1,
                 "minRandomTime": 5,
                 "maxRandomTime": 12,
                 "baseScore": 91,
@@ -53,6 +53,7 @@ class Settings:
             with open(CONFIG_DIR_PATH + "config.txt", mode='r', encoding='utf-8') as cfg:
                 s_json = json.loads(cfg.read())
         if s_json.get("version") is None or s_json["version"] < self.version:
+            s_json = self.update_config(s_json["version"], s_json)
             s_json["version"] = self.version
             s_json["#"] = [
                 "该列表为上方配置的注释项",
@@ -78,11 +79,11 @@ class Settings:
                 "词达人官方限制一天最多答3k题量，若老师发布任务较重，请勿堆积至一天内完成",
                 "若修改配置文件导致程序异常，请删除config.txt文件再运行一次程序使其重新生成即可正常运行"
             ]
-            self.save()
         self.user_token = s_json["userToken"]
         self.user_agent = s_json["userAgent"]
         self._is_random_time = s_json["isRandomTime"]
         self._is_random_score = s_json["isRandomScore"]
+        self._multiple_task = s_json["multipleTask"]
         self._min_random_time = s_json["minRandomTime"]
         self._max_random_time = s_json["maxRandomTime"]
         self._base_score = s_json["baseScore"]
@@ -104,6 +105,7 @@ class Settings:
             "userAgent": self.user_agent,
             "isRandomTime": self.is_random_time,
             "isRandomScore": self.is_random_score,
+            "multipleTask": self._multiple_task,
             "minRandomTime": self.min_random_time,
             "maxRandomTime": self.max_random_time,
             "baseScore": self.base_score,
@@ -113,6 +115,12 @@ class Settings:
         }
         with open(CONFIG_DIR_PATH + "config.txt", mode='w', encoding='utf-8') as cfg:
             cfg.write(json.dumps(s_json, indent=2, ensure_ascii=False))
+
+    @staticmethod
+    def update_config(version: int, json_config: dict) -> dict:
+        if version < 6:
+            json_config["multipleTask"] = 1
+        return json_config
 
     @property
     def header(self):
@@ -133,26 +141,44 @@ class Settings:
         return headers
 
     @property
-    def is_random_time(self):
+    def is_random_time(self) -> bool:
         return self._is_random_time
 
     @is_random_time.setter
-    def is_random_time(self, value):
+    def is_random_time(self, value) -> bool:
         if isinstance(value, bool):
             self._is_random_time = value
         else:
             self._is_random_time = True
 
     @property
-    def is_random_score(self):
+    def is_random_score(self) -> bool:
         return self._is_random_score
 
     @is_random_score.setter
-    def is_random_score(self, value):
+    def is_random_score(self, value) -> bool:
         if isinstance(value, bool):
             self.is_random_score = value
         else:
             self.is_random_score = True
+
+    @property
+    def is_multiple_task(self) -> bool:
+        return self._multiple_task != 1
+
+    @property
+    def multiple_task(self):
+        return self._multiple_task
+
+    @multiple_task.setter
+    def multiple_task(self, value):
+        if not isinstance(value, int):
+            self._multiple_task = 1
+        else:
+            if self._multiple_task > 5 or self._multiple_task < 1:
+                self._multiple_task = 1
+            else:
+                self._multiple_task = value
 
     @property
     def min_random_time(self):
@@ -160,7 +186,7 @@ class Settings:
 
     @min_random_time.setter
     def min_random_time(self, value):
-        if not isinstance(value, int):
+        if not isinstance(value, int) and not isinstance(value, float):
             self._min_random_time = 5
         else:
             if value > 20 or value < 1:
@@ -174,7 +200,7 @@ class Settings:
 
     @max_random_time.setter
     def max_random_time(self, value):
-        if not isinstance(value, int):
+        if not isinstance(value, int) and not isinstance(value, float):
             self._max_random_time = 12
         else:
             if value <= self.min_random_time:

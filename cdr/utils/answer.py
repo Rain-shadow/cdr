@@ -255,13 +255,21 @@ class Answer:
     def find_answer_by_53(self, content: str, remark: str) -> str:
         Log.d("\nfind_answer_by_53")
         Log.d(content)
+        Log.d(remark)
         content = adapter.process_option_sentence(content)
         Log.d(content)
-        for value in self._course.data.values():
+        for key, value in self._course.data.items():
             for example in value["content"]:
-                if example["example"].get(remark) is not None:
-                    sentence = example["example"][remark]
-                    #   不同单词可能具有相同例句，因测试其第一个"{"的位置是否相等
-                    if content.find("{") == sentence.find("{"):
-                        return sentence[sentence.find("{") + 1:sentence.find("}")]
+                if content == "{}":
+                    # 由 example["mean"] == remark 拓展适配得来
+                    # 感谢群友148***020提供的错误日志，263-269行代码由其帮助得来
+                    if len(Set(adapter.process_word_mean(example["mean"]))
+                           & Set(adapter.process_option_mean(remark))) != 0:
+                        return key
+                else:
+                    if example["example"].get(remark) is not None:
+                        sentence = example["example"][remark]
+                        #   不同单词可能具有相同例句，因测试其第一个"{"的位置是否相等
+                        if content.find("{") == sentence.find("{"):
+                            return sentence[sentence.find("{") + 1:sentence.find("}")]
         raise AnswerNotFoundException(53)

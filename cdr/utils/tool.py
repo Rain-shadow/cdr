@@ -51,10 +51,4 @@ class Tool:
 
     @staticmethod
     def cls():
-        f_handler = open('tem', 'w')
-        old_stdout = sys.stdout
-        sys.stdout = f_handler
-        os.system('cls')
-        sys.stdout = old_stdout
-        f_handler.close()
-        os.remove('tem')
+        tem = os.system('cls')

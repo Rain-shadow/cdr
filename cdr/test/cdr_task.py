@@ -7,26 +7,80 @@ import sys
 import random
 import requests
 import time
+import threading
+from threading import Lock
+from eprogress import LineProgress, MultiProgressManager
 from cdr.exception import AnswerNotFoundException, AnswerWrong
-from cdr.utils import settings, Answer, Log, Tool
+from cdr.utils import settings, Answer, Course, Log, Tool
 from cdr.config import CDR_VERSION, LOG_DIR_PATH
 
 
 class CDRTask:
 
+    def __init__(self):
+        self._progress = MultiProgressManager()
+        self.__line_progress: LineProgress = None
+        self.__progress_count = 0
+        self._lock = Lock()
+        self.__course_map = {}
+        self._thread_count = 0
+
+    def add_progress(self, key: str, title: str):
+        self._progress.put(key, LineProgress(total=100, width=25, title=title))
+
+    def update_progress(self, key: str, progress: float):
+        self._progress.update(key, progress)
+        Log.i(f"Key: {key}, Progress: {progress}", is_show=False)
+
     def run(self):
         pass
 
+    def do_task(self, task: dict, course_id: str, course: Course):
+        pass
+
+    def course_pretreatment(self, course: set) -> dict:
+        Log.i("已开启多任务答题，预加载任务所需题库中......")
+        self.__line_progress = LineProgress(total=len(course), width=50, title="题库加载进度")
+        self.__line_progress.update(0)
+        t_list = []
+        self.__course_map = {}
+        for course_id in course:
+            thread = threading.Thread(target=self.__load_course, args=(course_id,))
+            thread.setDaemon(True)
+            thread.start()
+            t_list.append(thread)
+        for thread in t_list:
+            thread.join()
+        return self.__course_map
+
+    def __load_course(self, course_id: str):
+        self.__course_map[course_id] = Course(course_id)
+        self._lock.acquire()
+        self.__progress_count += 1
+        self._lock.release()
+        self.__line_progress.update(self.__progress_count)
+
+    @property
+    def thread_count(self):
+        return self._thread_count
+
+    @thread_count.setter
+    def thread_count(self, value):
+        self._lock.acquire()
+        self._thread_count = value
+        self._lock.release()
+
     @staticmethod
     def find_answer_and_finish(answer: Answer, data: dict, type_id: int) -> dict:
+        is_show = not settings.is_multiple_task
         type_mode = ["StudyTask", "ClassTask"]
         content = data["stem"]["content"]
         remark = data["stem"]["remark"]
         topic_mode = data["topic_mode"]
         if topic_mode == 31:
-            Log.v(f"[mode:{topic_mode}]{content}", end='')
+            Log.v(f"[mode:{topic_mode}]{content}", end='', is_show=is_show)
         else:
-            Log.v(f"[mode:{topic_mode}]{content}({remark})", end='')
+            Log.v(f"[mode:{topic_mode}]{content}({remark})", end='', is_show=is_show)
         topic_code = data["topic_code"]
         options = data["options"]
         time_spent = CDRTask.get_random_time(topic_mode, min_time=settings.min_random_time,
@@ -89,7 +143,7 @@ class CDRTask:
             topic_code = e.topic_code
             input("等待错误检查（按下回车键即可继续执行）")
         else:
-            Log.v("   Done！")
+            Log.v("   Done！", is_show=is_show)
         if is_skip:
             return CDRTask.skip_answer(topic_code, topic_mode, type_mode[type_id])
         timestamp = Tool.time()
@@ -191,17 +245,17 @@ class CDRTask:
             "versions": CDR_VERSION,
             "sign": sign
         }
-        response = requests.post(url=f'https://gateway.vocabgo.com/Student/{type_mode}/SkipAnswer',
-                                 json=data, headers=settings.header, timeout=settings.timeout)
-        json = response.json()
-        response.close()
+        res = requests.post(url=f'https://gateway.vocabgo.com/Student/{type_mode}/SkipAnswer',
+                            json=data, headers=settings.header, timeout=settings.timeout)
+        json = res.json()
+        res.close()
         return json
 
     @staticmethod
     def wait_admin_choose():
         Log.w("\n建议携带error.txt反馈至负责人，由负责人排查BUG后继续"
               f"\n你可以在“main{LOG_DIR_PATH[1:]}”下找到error.txt")
-        Log.i("1. 以超时方式跳过本题\n2. 自主选择答案（待开发）\n"
+        Log.v("1. 以超时方式跳过本题\n2. 自主选择答案（待开发）\n"
               "#. 建议反馈此问题（该项不是选项），若要反馈此BUG，请不要选择选项1\n\n0. 结束程序")
         Log.create_error_txt()
         code_type = input("\n请输入指令：")
