@@ -14,6 +14,9 @@ from .test import ClassTask, MyselfTask
 
 
 def do_homework():
+    requests.adapters.DEFAULT_RETRIES = 5 # 增加重连次数
+    s = requests.session()
+    s.keep_alive = False
     Login()
     #   模拟加载流程
     requests.get("https://app.vocabgo.com/overall/#/student", headers=settings.header).close()
