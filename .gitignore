@@ -6,7 +6,12 @@
 
 ### CDR ###
 venv/
-config/
+./config/
 data/
 log/
+*.txt
+*.ico
+*.bat
+*.c
 test.py
+setup.py
