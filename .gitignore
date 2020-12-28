@@ -10,11 +10,14 @@ __pycache__/
 build/*
 config/*
 data/*
-./log/*
+log/*
+dist/*
 *.pyd
 *.txt
 *.ico
 *.bat
 *.c
+*.zip
 test.py
 setup.py
+main.spec
