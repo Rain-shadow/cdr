@@ -81,6 +81,10 @@ class ClassTask(CDRTask):
                     self._progress.clear()
                     t_list = []
                     self.thread_count = 0
+            # 防止线程数量不足而独立于主线程完成任务
+            self._progress.clear()
+            for thread in t_list:
+                thread.join()
         else:
             for task in task_choose_list:
                 # 未过期任务

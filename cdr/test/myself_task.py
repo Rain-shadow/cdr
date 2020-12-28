@@ -67,6 +67,9 @@ class MyselfTask(CDRTask):
                     self._progress.clear()
                     t_list = []
                     self.thread_count = 0
+            # 防止线程数量不足而独立于主线程完成任务
+            for thread in t_list:
+                thread.join()
         else:
             for task in task_choose_list:
                 self.do_task(task, course_id, None)
