@@ -92,3 +92,18 @@ class AnswerPattern1(IOrigin):
     @staticmethod
     def answer_51(option_word: str, word: str) -> str:
         return word.replace(option_word.replace("{", "").replace("}", ""), "")
+
+
+# 20.12.29修复由群友183***092提交的BUG
+# 处理选项中莫名其妙多出来的一个","
+class AnswerPattern2(IOrigin):
+
+    @staticmethod
+    def process_word_mean(mean: str) -> list:
+        tem = mean.replace(",", "").replace(" ", "")
+        return [tem, Tool.sort_str(tem)]
+
+    @staticmethod
+    def process_option_mean(mean: str) -> list:
+        tem = mean.replace(",", "").replace(" ", "")
+        return [tem, Tool.sort_str(tem)]

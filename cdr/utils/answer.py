@@ -33,9 +33,10 @@ class Answer:
         for answer in answer_list:
             for content in answer["content"]:
                 if content["example"].get(remark) or adapter.example_get_remark(content["example"], remark):
-                    Log.d(content["example"][remark])
+                    # 修复数组数据不全问题，该BUG由群友729***367提供
+                    tem_list = []
                     for mean in options:
-                        tem_list = [mean["content"]]
+                        tem_list.append(mean["content"])
                         tem_list.extend(adapter.process_option_mean(mean["content"]))
                         # 若选项集合与题库集合的交集存在，则说明该选项等于题库中的某个选项
                         # 由 mean == content["mean"] 拓展适配得来
@@ -149,10 +150,15 @@ class Answer:
                         if len(option_set & Set(usage)) == len(usage):
                             if len(usage) == blank_count:
                                 return ",".join(usage)
-                            # 下列情况为一个选项中存在多个单词（说好的一个单词一个选项呢？？？）
-                            result = adapter.answer_32(options, usage)
-                            if result:
-                                return result
+                            # 修复提款中同时存在
+                            # "迫切需要": ["an", "urgent", "need"]
+                            # "迫切需要": ["urgent", "need"]
+                            # 导致的答案匹配出错，该BUG由群友183***092提供，156行为其贡献
+                            if len(usage) > blank_count:
+                                # 下列情况为一个选项中存在多个单词（说好的一个单词一个选项呢？？？）
+                                result = adapter.answer_32(options, usage)
+                                if result:
+                                    return result
         raise AnswerNotFoundException(32)
 
     # 42与其处理方式一致

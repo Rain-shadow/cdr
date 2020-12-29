@@ -38,19 +38,17 @@ class AnswerAdapter:
 
     # 无则返回[]
     def process_option_mean(self, mean: str) -> list:
+        result = []
         for cls in self.__interfaces:
-            result = cls.process_option_mean(mean)
-            if result:
-                return result
-        return []
+            result.extend(cls.process_option_mean(mean))
+        return result
 
     # 无则返回[]
     def process_word_mean(self, mean: str) -> list:
+        result = []
         for cls in self.__interfaces:
-            result = cls.process_word_mean(mean)
-            if result:
-                return result
-        return []
+            result.extend(cls.process_word_mean(mean))
+        return result
 
     # 无则返回sentence
     def process_option_sentence(self, sentence: str) -> str:

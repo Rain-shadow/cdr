@@ -79,7 +79,7 @@ class CDRTask:
         remark = data["stem"]["remark"]
         topic_mode = data["topic_mode"]
         if topic_mode == 31:
-            Log.v(f"[mode:{topic_mode}]{content}", end='', is_show=is_show)
+            Log.v(f"[mode:{topic_mode}]{str(content)}", end='', is_show=is_show)
         else:
             Log.v(f"[mode:{topic_mode}]{content}({remark})", end='', is_show=is_show)
         topic_code = data["topic_code"]
@@ -253,9 +253,9 @@ class CDRTask:
 
     @staticmethod
     def wait_admin_choose():
-        Log.w("\n建议携带error-last.txt反馈至负责人，由负责人排查BUG后继续"
-              f"\n你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt")
-        Log.v("1. 以超时方式跳过本题\n2. 自主选择答案（待开发）\n"
+        Log.w("建议携带error-last.txt反馈至负责人，由负责人排查BUG后继续")
+        Log.v(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt\n"
+              "1. 以超时方式跳过本题\n2. 自主选择答案（待开发）\n"
               "#. 建议反馈此问题（该项不是选项），若要反馈此BUG，请不要选择选项1\n\n0. 结束程序")
         Log.create_error_txt()
         code_type = input("\n请输入指令：")
