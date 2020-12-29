@@ -140,7 +140,7 @@ class CDRTask:
                 topic_code = CDRTask.verify_answer(answer_id, topic_code, type_mode[type_id])
         except AnswerWrong as e:
             Log.w(e)
-            Log.w("请携带error.txt寻找GM排除适配问题")
+            Log.w("请携带error-last.txt寻找GM排除适配问题")
             Log.w(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt")
             Log.create_error_txt()
             topic_code = e.topic_code
@@ -176,12 +176,10 @@ class CDRTask:
         }
         if is_max:
             return max_time_list[str(topic_mode)] * 1000
-        if min_time >= max_time_list[str(topic_mode)]:
-            min_time = 5
         if max_time > max_time_list[str(topic_mode)]:
             max_time = max_time_list[str(topic_mode)]
         if min_time >= max_time:
-            min_time = 5
+            min_time = max_time - 0.01
         if max_time != 0 and settings.is_random_time:
             return random.randint(min_time * 1000, max_time * 1000)
         return 100
