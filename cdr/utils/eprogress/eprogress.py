@@ -126,7 +126,7 @@ class LineProgress(ProgressBar):
             num = int(progress / total * self.width)
             hashes = '◆' * num
             if num != 0:
-                hashes = '\033[32m' + hashes
+                hashes = '\033[36m' + hashes
             spaces = '◇' * (self.width - num)
             sys.stdout.write("\r %s:[%s\033[0m%s] %d%s   %s" %
                              (self.title, hashes, spaces, progress, self._tail, self.end))
