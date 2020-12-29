@@ -10,9 +10,9 @@ import requests
 import time
 import threading
 from threading import Lock
-from eprogress import LineProgress, MultiProgressManager
 from cdr.exception import AnswerNotFoundException, AnswerWrong
 from cdr.utils import settings, Answer, Course, Log, Tool
+from cdr.utils.eprogress import LineProgress, MultiProgressManager
 from cdr.config import CDR_VERSION, LOG_DIR_PATH
 
 
@@ -26,12 +26,19 @@ class CDRTask:
         self.__course_map = {}
         self._thread_count = 0
 
-    def add_progress(self, key: str, title: str):
-        self._progress.put(key, LineProgress(total=100, width=25, title=title))
+    def add_progress(self, key: str, title: str, total: int):
+        tail = "%"
+        if not settings.is_style_by_percent:
+            tail = f"/{total}"
+        self._progress.put(key, LineProgress(
+            total=total, width=30, title=title, tail=tail, is_percent=settings.is_style_by_percent))
 
-    def update_progress(self, key: str, progress: float):
-        self._progress.update(key, progress)
+    def update_progress(self, key: str, progress: float, data: dict = None):
+        self._progress.update(key, progress, data)
         Log.i(f"Key: {key}, Progress: {progress}", is_show=False)
+
+    def finish_progress(self, key: str, msg):
+        self._progress.finish(key, msg)
 
     def run(self):
         pass

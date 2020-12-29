@@ -62,7 +62,7 @@ class Log:
     @staticmethod
     def i(s, end='\n', is_show=True):
         if is_show and Log.LEVEL <= 1:
-            print(f"\033[0;34m[Info]\033[0m {s}", end=end)
+            print(f"\033[0;36m[Info]\033[0m {s}", end=end)
         _log(f"[Info] {s}", end=end)
 
     @staticmethod

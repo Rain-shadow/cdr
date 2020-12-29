@@ -153,21 +153,22 @@ class MyselfTask(CDRTask):
                     return
                 if settings.is_multiple_task:
                     Log.i(json_data, is_show=False)
-                    self.add_progress(task['list_id'], task['task_name'])
+                    self.add_progress(task['list_id'], task['task_name'], json_data['data']['topic_total'])
                     self.update_progress(task['list_id'], 0)
-                    Log.i(f"Key: {task['list_id']}, Total: {json_data['data']['topic_total']}", is_show=False)
                 # 提交做题
                 #   code=20004时代表当前题目已做完，测试任务完成标志
                 #   code=20001需要选词，学习任务完成标志
                 while json_data["code"] != 20004 and json_data["code"] != 20001 and \
                         json_data["data"]["topic_done_num"] <= json_data["data"]["topic_total"]:
                     if settings.is_multiple_task:
-                        self.update_progress(task['list_id'],
-                                             json_data["data"]["topic_done_num"] * 100.0
-                                             / json_data["data"]["topic_total"])
+                        self.update_progress(task['list_id'], json_data["data"]["topic_done_num"])
                     json_data = MyselfTask.do_question(answer, json_data, course_id, task['list_id'], now_score)
-                Log.i(f"【{task['task_name']}】已完成。分数"
-                      f"{MyselfTask.get_myself_task_score(course_id, task['list_id'])}", is_show=is_show)
+                if is_show:
+                    Log.i(f"【{task['task_name']}】已完成。"
+                          f"分数：{MyselfTask.get_myself_task_score(course_id, task['list_id'])}")
+                else:
+                    self.finish_progress(task['list_id'],
+                                         f"分数：{MyselfTask.get_myself_task_score(course_id, task['list_id'])}")
                 if json_data["code"] == 20004:
                     break
                 if now_score <= MyselfTask.get_myself_task_score(course_id, task['list_id']):

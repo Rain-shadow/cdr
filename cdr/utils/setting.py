@@ -12,19 +12,17 @@ import threading
 from cdr.config import CONFIG_DIR_PATH
 from .log import Log
 
-__all__ = ["Settings"]
-
 
 def _get_encode_info(file):
     with open(file, 'rb') as f:
         return chardet.detect(f.read())['encoding']
 
 
-class Settings:
+class Settings(object):
+    VERSION = 7
     _instance_lock = threading.Lock()
 
     def __init__(self):
-        self.version = 6
         if os.path.exists(CONFIG_DIR_PATH + "config.txt") \
                 and _get_encode_info(CONFIG_DIR_PATH + "config.txt") != "utf-8":
             Log.w("检测到配置文件格式有误，自动转换文件格式")
@@ -42,19 +40,20 @@ class Settings:
                              + 'MicroMessenger/7.0.13.1640(0x27000D39) Process/tools NetType/WIFI Language/zh_CN ABI/arm64 WeChat/arm64',
                 "isRandomTime": True,
                 "isRandomScore": False,
+                "isStyleByPercent": True,
                 "multipleTask": 1,
                 "minRandomTime": 5,
                 "maxRandomTime": 12,
                 "baseScore": 91,
                 "offsetScore": 1,
-                "version": self.version - 1
+                "version": Settings.VERSION - 1
             }
         else:
             with open(CONFIG_DIR_PATH + "config.txt", mode='r', encoding='utf-8') as cfg:
                 s_json = json.loads(cfg.read())
-        if s_json.get("version") is None or s_json["version"] < self.version:
+        if s_json.get("version") is None or s_json["version"] < Settings.VERSION:
             s_json = self.update_config(s_json["version"], s_json)
-            s_json["version"] = self.version
+            s_json["version"] = Settings.VERSION
             s_json["#"] = [
                 "该列表为上方配置的注释项",
                 "修改配置文件后，需要重启程序才能使新的配置项生效",
@@ -65,6 +64,7 @@ class Settings:
                 "警告！应当只有在任务离结束不到10分钟时再关闭，关闭后被词达人封1天的概率是100%，但任务能快速完成，请各位自行抉择",
                 "警告！关闭该项会造成控分系统出现巨大误差，会让实际分数远高于目标分数（当然不可能超过100）",
                 "isRandomScore: 是否开启控分选项，实际成绩总是略高于目标分数，但不超过100。取值[true/false]",
+                "isStyleByPercent: 在多任务中是否让进度条以百分比显示，对于任务量较重的建议关闭，将以具体数量显示。取值[true/false]",
                 "multipleTask: 同时进行的任务数量，最低为1，最大为5，若格式错误将重置为1",
                 "警告！该功能为实验性功能，或许会存在未知BUG！请谨慎开启！",
                 "警告！虽在个人测试中未有封号现象，但无法保证该现象为普遍现象，更无法保证以后也如此，请谨慎开启！",
@@ -84,6 +84,7 @@ class Settings:
         self.user_agent = s_json["userAgent"]
         self._is_random_time = s_json["isRandomTime"]
         self._is_random_score = s_json["isRandomScore"]
+        self._is_style_by_percent = s_json["isStyleByPercent"]
         self._multiple_task = s_json["multipleTask"]
         self._min_random_time = s_json["minRandomTime"]
         self._max_random_time = s_json["maxRandomTime"]
@@ -95,11 +96,10 @@ class Settings:
         self.save()
 
     def __new__(cls, *args, **kwargs):
-        if not hasattr(Settings, "_instance"):
-            with Settings._instance_lock:
-                if not hasattr(Settings, "_instance"):
-                    Settings._instance = object.__new__(cls)
-        return Settings._instance
+        """单例"""
+        if not hasattr(cls, '_instance'):
+            cls._instance = super(Settings, cls).__new__(cls)
+        return cls._instance
 
     def save(self):
         s_json = {
@@ -107,6 +107,7 @@ class Settings:
             "userAgent": self.user_agent,
             "isRandomTime": self.is_random_time,
             "isRandomScore": self.is_random_score,
+            "isStyleByPercent": self.is_style_by_percent,
             "multipleTask": self._multiple_task,
             "minRandomTime": self.min_random_time,
             "maxRandomTime": self.max_random_time,
@@ -122,6 +123,8 @@ class Settings:
     def update_config(version: int, json_config: dict) -> dict:
         if version < 6:
             json_config["multipleTask"] = 1
+        if version < 7:
+            json_config["isStyleByPercent"] = True
         return json_config
 
     @property
@@ -147,7 +150,7 @@ class Settings:
         return self._is_random_time
 
     @is_random_time.setter
-    def is_random_time(self, value) -> bool:
+    def is_random_time(self, value):
         if isinstance(value, bool):
             self._is_random_time = value
         else:
@@ -158,11 +161,22 @@ class Settings:
         return self._is_random_score
 
     @is_random_score.setter
-    def is_random_score(self, value) -> bool:
+    def is_random_score(self, value):
         if isinstance(value, bool):
             self.is_random_score = value
         else:
             self.is_random_score = True
+
+    @property
+    def is_style_by_percent(self):
+        return self._is_style_by_percent
+
+    @is_style_by_percent.setter
+    def is_style_by_percent(self, value):
+        if isinstance(value, bool):
+            self._is_style_by_percent = value
+        else:
+            self._is_style_by_percent = True
 
     @property
     def is_multiple_task(self) -> bool:
@@ -231,3 +245,7 @@ class Settings:
             self._offset_score = 1
         else:
             self._offset_score = value
+
+
+_settings = Settings()
+__all__ = ["Settings", "_settings"]

@@ -6,11 +6,11 @@
 
 from .log import Log
 from .set import Set
-from .setting import Settings
+from .setting import Settings, _settings
 from .course import Course
 from .answer import Answer
 from .tool import Tool
 
-settings = Settings()
+settings = _settings
 
 __all__ = ["Log", "settings", "Set", "Settings", "Course", "Answer", "Tool"]

@@ -10,12 +10,12 @@ import requests
 import os
 import threading
 from threading import Lock
-from .setting import Settings
+from .setting import _settings
 from .log import Log
 from .tool import Tool
 from cdr.config import CDR_VERSION, DATA_DIR_PATH
 
-_settings: Settings = Settings()
+_settings = _settings
 
 
 class Course:
