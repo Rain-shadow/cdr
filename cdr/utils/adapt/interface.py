@@ -107,3 +107,14 @@ class AnswerPattern2(IOrigin):
     def process_option_mean(mean: str) -> list:
         tem = mean.replace("，", "").replace(" ", "")
         return [tem, Tool.sort_str(tem)]
+
+
+# 20.12.29修复由群友253***814提交的BUG
+# 这是他在看着电视没事干时试出来的
+# 处理选项中括号及括号中的内容
+class AnswerPattern3(IOrigin):
+
+    @staticmethod
+    def process_option_mean(mean: str) -> list:
+        tem = re.sub(r"[(（].*?[）)]", "", mean)
+        return [tem, Tool.sort_str(tem)]

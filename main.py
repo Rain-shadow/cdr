@@ -9,7 +9,13 @@ from cdr.exception import hook_except
 import os
 import sys
 
+def version():
+    return cdr_version
+
 if __name__ == '__main__':
+    if len(sys.argv[1:]) != 0 and sys.argv[1:][0] == "-v":
+        print(version())
+        sys.exit(0)
     os.system(f'title 词达人-v{cdr_version}')
     hook_except()
     do_homework()

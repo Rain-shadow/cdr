@@ -4,7 +4,6 @@
 # @Time  : 2020-12-19, 0019 23:08
 # @Author: 佚名
 # @File  : excepthook.py
-
 import sys
 from requests import ReadTimeout
 from requests.exceptions import ProxyError
@@ -26,15 +25,15 @@ def __my_except_hook(exc_type, exc_value, tb):
 
     Log.v("")
     Log.e(msg, is_show=False)
-    if isinstance(exc_type, ReadTimeout)\
-        or isinstance(exc_type, ConnectionError)\
-        or isinstance(exc_type, ProxyError):
-        Log.e("网路不稳定，请待网路恢复后重启程序，按回车键退出程序")
+    if exc_type == ReadTimeout or exc_type == ProxyError or exc_type == ConnectionError:
+        Log.e("网路不稳定，请待网路恢复后重启程序")
+    elif exc_type == KeyboardInterrupt:
+        Log.i("你主动中断了程序的运行")
     else:
-        Log.e("未知异常，请上报此错误（error-last.txt）给GM，按回车键退出程序")
+        Log.e("未知异常，请上报此错误（error-last.txt）给GM")
         Log.e(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt")
-        Log.create_error_txt()
-    input()
+        # Log.create_error_txt()
+    input("按回车键退出程序")
     sys.exit(1)
 
 

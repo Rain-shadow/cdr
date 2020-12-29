@@ -99,6 +99,8 @@ class Answer:
         content = re.sub(r'\s\s', ' ', content)
         Log.d(content)
         Log.d(options)
+        # 感谢群友104***629提供的错误日志让我意识到了使用了错误的适配函数
+        content_set = Set(adapter.process_option_mean(content))
         for word in options:
             answer = self._course.find_detail_by_word(word["content"])
             Log.d(answer)
@@ -109,7 +111,7 @@ class Answer:
             for mean in answer["content"]:
                 tem_list.append(mean["mean"])
                 tem_list.extend(adapter.process_word_mean(mean["mean"]))
-            if len(Set(tem_list) & Set(adapter.process_word_mean(content))) != 0:
+            if len(Set(tem_list) & content_set) != 0:
                 return str(word["answer_tag"])
         raise AnswerNotFoundException(17)
 
@@ -150,7 +152,7 @@ class Answer:
                         if len(option_set & Set(usage)) == len(usage):
                             if len(usage) == blank_count:
                                 return ",".join(usage)
-                            # 修复提款中同时存在
+                            # 修复题库中同时存在
                             # "迫切需要": ["an", "urgent", "need"]
                             # "迫切需要": ["urgent", "need"]
                             # 导致的答案匹配出错，该BUG由群友183***092提供，156行为其贡献
