@@ -22,11 +22,12 @@ class Course:
     DATA_VERSION = 3
 
     def __init__(self, course_id):
+        is_show = not _settings.is_multiple_task
         self.id = course_id
         self.data = {}
         if self._load_local_answer():
             return
-        Log.i("从网络装载题库中......(10s-30s)")
+        Log.i("从网络装载题库中......(10s-30s)", is_show=is_show)
         self._headers = {
             "Host": "gateway.vocabgo.com",
             "Accept": "application/json, text/plain, */*",
@@ -76,6 +77,10 @@ class Course:
                 }
                 answer.write(json.dumps(tem))
                 answer.close()
+            Log.i("本次题库已成功保存", is_show=is_show)
+        else:
+            Log.i("有单词未能成功加载，这会导致答案匹配率下降且本次不会保存题库", is_show=is_show)
+            Log.i("你可以等待网络通畅后继续答题", is_show=is_show)
 
     def _load_local_answer(self) -> bool:
         if not os.path.exists(DATA_DIR_PATH + self.id):
