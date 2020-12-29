@@ -180,6 +180,9 @@ class CDRTask:
             max_time = max_time_list[str(topic_mode)]
         if min_time >= max_time:
             min_time = max_time - 0.01
+        if min_time <= 0:
+            min_time = 5
+            max_time = 10
         if max_time != 0 and settings.is_random_time:
             return random.randint(min_time * 1000, max_time * 1000)
         return 100
