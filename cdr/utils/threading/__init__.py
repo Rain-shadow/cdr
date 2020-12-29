@@ -4,5 +4,6 @@
 # @Time  : 2020-12-29, 0029 15:26
 # @Author: 佚名
 # @File  : __init__.py.py
+from .custom_thread import CustomThread
 
-
+__all__ = ["CustomThread"]

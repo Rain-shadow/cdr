@@ -171,9 +171,11 @@ class MultiProgressManager(object):
             for tmp_key in self._progress_dict.keys():
                 progress_bar = self._progress_dict.get(tmp_key)
                 tmp_progress = -1
+                tem_data = None
                 if key == tmp_key:
                     tmp_progress = progress
-                progress_bar.update(tmp_progress, data)
+                    tem_data = data
+                progress_bar.update(tmp_progress, tem_data)
                 sys.stdout.write('\n')
 
     def finish(self, key, msg: str = "Finish!"):

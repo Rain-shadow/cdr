@@ -10,10 +10,11 @@ import re
 import requests
 import sys
 import time
-import threading
+
 from .cdr_task import CDRTask
-from ..utils import settings, Answer, Course, Log, Tool
-from ..config import CDR_VERSION, CONFIG_DIR_PATH
+from cdr.utils import settings, Answer, Course, Log, Tool
+from cdr.utils.threading import CustomThread
+from cdr.config import CDR_VERSION, CONFIG_DIR_PATH
 
 
 class ClassTask(CDRTask):
@@ -72,7 +73,7 @@ class ClassTask(CDRTask):
             for task in task_choose_list:
                 self.thread_count += 1
                 course_id = task.get("course_id") or re.match(r'.*/(.*)\.jpg', task["course_img_url"]).group(1)
-                thread = threading.Thread(target=self.do_task, args=(task, course_id, course_map[course_id]))
+                thread = CustomThread(target=self.do_task, args=(task, course_id, course_map[course_id]))
                 thread.setDaemon(True)
                 thread.start()
                 t_list.append(thread)

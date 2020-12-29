@@ -9,10 +9,11 @@ import gc
 import requests
 import sys
 import time
-import threading
+
+from cdr.utils.threading import CustomThread
 from .cdr_task import CDRTask
-from ..utils import settings, Answer, Course, Log, Tool
-from ..config import CDR_VERSION, CONFIG_DIR_PATH
+from cdr.utils import settings, Answer, Course, Log, Tool
+from cdr.config import CDR_VERSION, CONFIG_DIR_PATH
 
 
 class MyselfTask(CDRTask):
@@ -58,7 +59,7 @@ class MyselfTask(CDRTask):
             t_list = []
             for task in task_choose_list:
                 self.thread_count += 1
-                thread = threading.Thread(target=self.do_task, args=(task, course_id, course))
+                thread = CustomThread(target=self.do_task, args=(task, course_id, course))
                 thread.setDaemon(True)
                 thread.start()
                 t_list.append(thread)

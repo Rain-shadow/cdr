@@ -9,7 +9,8 @@ import sys
 from requests import ReadTimeout
 from requests.exceptions import ProxyError
 
-from ..utils import Log
+from cdr.utils import Log
+from cdr.config import LOG_DIR_PATH
 
 
 def __my_except_hook(exc_type, exc_value, tb):
@@ -31,8 +32,10 @@ def __my_except_hook(exc_type, exc_value, tb):
         Log.e("网路不稳定，请待网路恢复后重启程序，按回车键退出程序")
     else:
         Log.e("未知异常，请上报此错误（error-last.txt）给GM，按回车键退出程序")
+        Log.e(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt")
         Log.create_error_txt()
     input()
+    sys.exit(1)
 
 
 def hook_except():
