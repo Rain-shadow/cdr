@@ -32,7 +32,7 @@ def __my_except_hook(exc_type, exc_value, tb):
     else:
         Log.e("未知异常，请上报此错误（error-last.txt）给GM")
         Log.e(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt")
-        # Log.create_error_txt()
+        Log.create_error_txt()
     input("按回车键退出程序")
     sys.exit(1)
 
