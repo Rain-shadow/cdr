@@ -7,6 +7,8 @@
 import requests
 from cdr.exception import NetworkError
 __s = requests.Session()
+__s.mount('http://', __s.adapters.HTTPAdapter(max_retries=3))
+__s.mount('https://', __s.adapters.HTTPAdapter(max_retries=3))
 __s.adapters.DEFAULT_RETRIES = 5
 __s.keep_alive = False
 
