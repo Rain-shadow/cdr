@@ -24,12 +24,12 @@ class IOrigin:
     # 处理选项中单词词义
     @staticmethod
     def process_option_mean(mean: str) -> list:
-        pass
+        return []
 
     # 处理题库中单词词义
     @staticmethod
     def process_word_mean(mean: str) -> list:
-        pass
+        return []
 
     @staticmethod
     def process_option_sentence(sentence: str) -> str:

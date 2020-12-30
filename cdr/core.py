@@ -16,7 +16,7 @@ from cdr.utils import settings, Log, Tool
 def do_homework():
     Login()
     #   模拟加载流程
-    requests.get("https://app.vocabgo.com/overall/#/student", headers=settings.header).close()
+    requests.get("https://app.vocabgo.com/student/", headers=settings.header).close()
     res = requests.get("https://gateway.vocabgo.com/Student/Main?timestamp="
                        f"{Tool.time()}&versions={CDR_VERSION}", headers=settings.header)
     json = res.json()["data"]

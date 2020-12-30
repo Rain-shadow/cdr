@@ -345,7 +345,6 @@ class MyselfTask(CDRTask):
         if json_data.get("data") is None:
             Log.e(json_data, is_show=False)
         if json_data["code"] == 1 and json_data["data"]["topic_done_num"] % 10 == 0:
-            requests.session().keep_alive = False
             gc.collect()
             gc.set_debug(gc.DEBUG_UNCOLLECTABLE)
         return json_data

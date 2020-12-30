@@ -7,6 +7,5 @@
 from .excepthook import hook_except
 from .answer_not_found import AnswerNotFoundException
 from .answer_wrong import AnswerWrong
-from .network_error import NetworkError
 
-__all__ = ["hook_except", "AnswerNotFoundException", "AnswerWrong", "NetworkError"]
+__all__ = ["hook_except", "AnswerNotFoundException", "AnswerWrong"]

@@ -54,7 +54,7 @@ class AnswerAdapter:
     def process_option_sentence(self, sentence: str) -> str:
         for cls in self.__interfaces:
             result = cls.process_option_sentence(sentence)
-            if result:
+            if result and result != sentence:
                 return result
         return sentence
 
@@ -62,7 +62,7 @@ class AnswerAdapter:
     def process_option_usage(self, usage: str) -> str:
         for cls in self.__interfaces:
             result = cls.process_option_usage(usage)
-            if result:
+            if result and result != usage:
                 return result
         return usage
 

@@ -92,7 +92,7 @@ class Settings(object):
         self._offset_score = s_json["offsetScore"]
         self.version = s_json["version"]
         self._note = s_json["#"]
-        self.timeout = 25
+        self.timeout = 30
         self.save()
 
     def __new__(cls, *args, **kwargs):
