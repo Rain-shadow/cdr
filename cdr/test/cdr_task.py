@@ -12,7 +12,7 @@ import threading
 from threading import Lock
 from cdr.exception import AnswerNotFoundException, AnswerWrong
 from cdr.utils import settings, Answer, Course, Log, Tool
-from cdr.utils.eprogress import LineProgress, MultiProgressManager
+from cdr.eprogress import LineProgress, MultiProgressManager
 from cdr.config import CDR_VERSION, LOG_DIR_PATH
 
 

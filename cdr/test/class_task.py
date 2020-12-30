@@ -13,7 +13,7 @@ import time
 
 from .cdr_task import CDRTask
 from cdr.utils import settings, Answer, Course, Log, Tool
-from cdr.utils.threading import CustomThread
+from cdr.threading import CustomThread
 from cdr.config import CDR_VERSION, CONFIG_DIR_PATH
 
 
