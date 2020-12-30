@@ -6,7 +6,6 @@
 # @File  : tool.py
 import hashlib
 import os
-import sys
 import time
 
 

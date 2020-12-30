@@ -6,9 +6,9 @@
 # @File  : course.py
 import json
 import re
-import requests
 import os
 import threading
+import cdr.requests as requests
 from threading import Lock
 from .setting import _settings
 from .log import Log

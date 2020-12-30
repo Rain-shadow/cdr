@@ -6,9 +6,9 @@
 # @File  : myself_task.py
 import json
 import gc
-import requests
 import sys
 import time
+import cdr.requests as requests
 
 from cdr.threading import CustomThread
 from .cdr_task import CDRTask

@@ -6,9 +6,9 @@
 # @File  : cdr_task.py
 import sys
 import random
-import requests
 import time
 import threading
+import cdr.requests as requests
 from threading import Lock
 from cdr.exception import AnswerNotFoundException, AnswerWrong
 from cdr.utils import settings, Answer, Course, Log, Tool

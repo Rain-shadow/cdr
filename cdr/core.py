@@ -4,19 +4,16 @@
 # @Time  : 2020-12-19, 0019 15:32
 # @Author: 佚名
 # @File  : core.py
-import requests
 import sys
 import time
+import cdr.requests as requests
 from .login import Login
-from .config import CDR_VERSION
-from .utils import settings, Log, Tool
-from .test import ClassTask, MyselfTask
+from cdr.config import CDR_VERSION
+from cdr.test import ClassTask, MyselfTask
+from cdr.utils import settings, Log, Tool
 
 
 def do_homework():
-    requests.adapters.DEFAULT_RETRIES = 5 # 增加重连次数
-    s = requests.session()
-    s.keep_alive = False
     Login()
     #   模拟加载流程
     requests.get("https://app.vocabgo.com/overall/#/student", headers=settings.header).close()
@@ -65,7 +62,7 @@ def do_homework():
             Login()
             Tool.cls()
             res = requests.get("https://gateway.vocabgo.com/Student/Main?timestamp="
-                                    f"{Tool.time()}&versions={CDR_VERSION}", headers=settings.header)
+                               f"{Tool.time()}&versions={CDR_VERSION}", headers=settings.header)
             json = res.json()["data"]
             res.close()
         elif choose == "0":

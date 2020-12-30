@@ -4,14 +4,14 @@
 # @Time  : 2020-12-20, 0020 22:45
 # @Author: 佚名
 # @File  : login.py
-import requests
 import time
 import sys
 import os
 import random
 import qrcode
-from cdr.utils import settings, Log, Tool
+import cdr.requests as requests
 from cdr.config import CDR_VERSION, CONFIG_DIR_PATH
+from cdr.utils import settings, Log, Tool
 
 
 class Login:

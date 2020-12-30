@@ -7,9 +7,9 @@
 import json
 import gc
 import re
-import requests
 import sys
 import time
+import cdr.requests as requests
 
 from .cdr_task import CDRTask
 from cdr.utils import settings, Answer, Course, Log, Tool
