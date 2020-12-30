@@ -6,7 +6,7 @@
 # @File  : core.py
 import sys
 import time
-import cdr.requests as requests
+import cdr.request as requests
 from .login import Login
 from cdr.config import CDR_VERSION
 from cdr.test import ClassTask, MyselfTask
@@ -34,7 +34,7 @@ def do_homework():
         "sign": sign
     }
     res = requests.post(url='https://gateway.vocabgo.com/Auth/Wechat/Config',
-                        headers=settings.header, json=data)
+                       headers=settings.header, json=data)
     Log.i("WechatConfig:")
     Log.i(res.content.decode("utf8"))
     res.close()

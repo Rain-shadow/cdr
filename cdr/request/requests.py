@@ -3,7 +3,7 @@
 # cython : language_level=3
 # @Time  : 2020-12-30, 0030 16:09
 # @Author: 佚名
-# @File  : requests.py
+# @File  : request.py
 import requests
 import urllib3
 from requests.adapters import HTTPAdapter

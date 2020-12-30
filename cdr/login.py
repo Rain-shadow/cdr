@@ -9,7 +9,7 @@ import sys
 import os
 import random
 import qrcode
-import cdr.requests as requests
+import cdr.request as requests
 from cdr.config import CDR_VERSION, CONFIG_DIR_PATH
 from cdr.utils import settings, Log, Tool
 
@@ -115,4 +115,3 @@ class Login:
         Log.i("二维码以生成，将自动展示，请使用微信扫一扫进行词达人授权。成功后请关闭图片查看程序，若失败，用户可在“main目录\\config目录”下找到“授权二维码.jpg”")
         img.save(f"{CONFIG_DIR_PATH}授权二维码.jpg")
         img.show()  # 显示图片
-

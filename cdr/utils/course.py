@@ -8,7 +8,7 @@ import json
 import re
 import os
 import threading
-import cdr.requests as requests
+import cdr.request as requests
 from threading import Lock
 from .setting import _settings
 from .log import Log

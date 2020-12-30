@@ -8,7 +8,7 @@ import sys
 import random
 import time
 import threading
-import cdr.requests as requests
+import cdr.request as requests
 from threading import Lock
 from cdr.exception import AnswerNotFoundException, AnswerWrong
 from cdr.utils import settings, Answer, Course, Log, Tool
