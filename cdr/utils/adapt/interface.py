@@ -85,7 +85,10 @@ class AnswerPattern1(IOrigin):
 
     @staticmethod
     def process_option_usage(usage: str) -> str:
-        tem = usage.replace('.', ' ').replace("…", " ").replace("-", " ").replace(",", " ").replace("\n", " ").strip()
+        #去除ZZ的图标字符串
+        tem = re.sub(r"\\[uU][eE][0-9]{3}", "", usage.encode('unicode-escape').decode("utf-8"))\
+            .encode('utf-8').decode("unicode-escape")
+        tem = tem.replace('.', ' ').replace("…", " ").replace("-", " ").replace(",", " ").replace("\n", "").strip()
         return " ".join(tem.split())
 
     @staticmethod
@@ -106,7 +109,7 @@ class AnswerPattern1(IOrigin):
     def answer_32_2(options: list, usage: list) -> str:
         for index, value in enumerate(usage):
             for v in options:
-                if value == v["content"].strip():
+                if value == AnswerPattern1.process_option_usage(v["content"]):
                     usage[index] = v["content"]
         return ",".join(usage)
 

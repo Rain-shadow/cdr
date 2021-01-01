@@ -127,6 +127,7 @@ class CDRTask:
                 Log.create_error_txt()
                 input("等待错误检查（按下回车键键即可继续执行）")
         except AnswerNotFoundException as e:
+            Log.v("")
             Log.w(f"{e}")
             CDRTask.wait_admin_choose()
             is_skip = True

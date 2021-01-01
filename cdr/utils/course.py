@@ -142,7 +142,6 @@ class Course:
 
     @staticmethod
     def get_detail_by_word(course_id, list_id, word):
-        global _settings
         timeout = _settings.timeout
         data = {
             "course_id": course_id,
@@ -161,7 +160,7 @@ class Course:
             "assist": []
         }
         count = 0
-        pattern = re.compile(r"([0-9A-Za-z\.\s\(\)\{\}'/&‘’,（）…-]*)?\s(.*)")
+        pattern = re.compile(r"([0-9A-Za-z\.\s\(\)\{\}'/&‘’,（）…-]*)?[\s]+(.*)")
         is_more = re.compile(r"(.*…)\s(…[^a-zA-Z]*)")
         for i, o in enumerate(data["options"]):
             count = count + 1
@@ -178,13 +177,15 @@ class Course:
             #   辅助单词列表，存放当前单词例句中的不同时态
             #   处理答案
             for j in content["usage"]:
-                matcher = None
+                j = re.sub(r"\\[uU][eE][0-9]{3}", "", j.encode('unicode-escape').decode("utf-8"))\
+                    .encode('utf-8').decode("unicode-escape")
                 if is_more.match(j) is None:
                     matcher = pattern.match(j)
                 else:
                     matcher = re.match(r"([0-9A-Za-z\.\s\(\)\{\}'/&‘’,（）…-]*)?\s(….*)", j)
                 if matcher is None:
                     print(j)
+
                 tem_list = matcher.group(1).replace('{', '').replace('}', '') \
                     .replace('.', ' ').replace("…", " ").replace("-", " ").replace(",", " ")
                 #   处理因清理"..."而造成的多余空格
