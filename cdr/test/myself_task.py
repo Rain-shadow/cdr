@@ -97,12 +97,25 @@ class MyselfTask(CDRTask):
                     break
                 Log.i("模拟加载流程", is_show=is_show)
                 #   模拟加载流程
-                res = requests.get(url=f"https://gateway.vocabgo.com/Student/StudyTask/Info?task_id={task_id:d}"
-                f"&course_id={task['course_id']}&list_id={task['list_id']}"
-                f"&timestamp={Tool.time()}&versions={CDR_VERSION}",
-                                   headers=settings.header, timeout=time_out)
+                data = {
+                    "task_id": task_id,
+                    "course_id": task['course_id'],
+                    "list_id": task['list_id'],
+                    "timestamp": Tool.time(),
+                    "versions": CDR_VERSION,
+                }
+                res = requests.get(url=f"https://gateway.vocabgo.com/Student/StudyTask/Info",
+                                   params=data, headers=settings.header, timeout=time_out)
                 json_data = res.json()
                 res.close()
+                # 解决ZZ词达人无法根据原本任务ID获取信息，只能通过默认获取。本BUG（这不能算我的BUG啊）由群友239***963提供
+                if json_data["code"] == 0:
+                    data["task_id"] = -1
+                    task_id = -1
+                    Log.v(data)
+                    res = requests.get(url=f"https://gateway.vocabgo.com/Student/StudyTask/Info",
+                                       params=data, headers=settings.header, timeout=time_out)
+                    json_data = res.json()
                 task_id = json_data["data"]["task_id"]
                 grade = json_data["data"]["grade"]
                 time.sleep(1)

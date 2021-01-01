@@ -9,6 +9,7 @@ import sys
 from requests import ReadTimeout
 from requests.exceptions import ProxyError, ConnectionError
 
+from cdr.request.network_error import NetworkError
 from cdr.utils.log import Log
 from cdr.config import LOG_DIR_PATH
 
@@ -30,6 +31,9 @@ def __my_except_hook(exc_type, exc_value, tb):
         Log.e("网路不稳定，请待网路恢复后重启程序")
     elif exc_type == KeyboardInterrupt:
         Log.i("你主动中断了程序的运行")
+    elif exc_type == NetworkError:
+        Log.e(f"词达人自己崩了！{exc_value.msg}")
+        Log.create_error_txt()
     else:
         Log.e("未知异常，请上报此错误（error-last.txt）给GM")
         Log.e(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt")
