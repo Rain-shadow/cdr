@@ -21,4 +21,4 @@ dist/*
 *.zip
 test.py
 setup.py
-main.spec
+main*.spec

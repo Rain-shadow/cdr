@@ -19,7 +19,7 @@ _settings = _settings
 
 
 class Course:
-    DATA_VERSION = 3
+    DATA_VERSION = 4
 
     def __init__(self, course_id):
         is_show = not _settings.is_multiple_task
@@ -189,7 +189,7 @@ class Course:
                     .replace('.', ' ').replace("…", " ").replace("-", " ").replace(",", " ")
                 #   处理因清理"..."而造成的多余空格
                 tem_list = " ".join(tem_list.split()).split(" ")
-                tem_str = matcher.group(2)
+                tem_str = matcher.group(2).strip()
                 #   因不同短语可能具有相同的翻译，需做额外处理
                 if answer["content"][i]["usage"].get(tem_str) is None:
                     answer["content"][i]["usage"][tem_str] = []
