@@ -116,7 +116,7 @@ class ClassTask(CDRTask):
             while True:
                 count += 1
                 if count > 3:
-                    Log.i("相同任务重复答题次数过多，疑似存在无法找到答案的题目，自动跳过本任务", is_show=is_show)
+                    Log.w("相同任务重复答题次数过多，疑似存在无法找到答案的题目，自动跳过本任务", is_show=is_show)
                     break
                 Log.i("模拟加载流程", is_show=is_show)
                 if task_type == 1:

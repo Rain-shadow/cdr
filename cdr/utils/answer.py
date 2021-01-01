@@ -236,6 +236,7 @@ class Answer:
         usage_list = adapter.process_option_usage(content).split(" ")
         usage_list_set = Set(usage_list)
         Log.d(usage_list)
+        remark_set = Set(adapter.process_option_mean(remark))
         #   被弃用的正则表达式：
         #   (?:noun|verb|prep|adj|adv|conj|pron|excl|PRON-POSS|QUANT)\s?(.*)
         pattern = re.compile(r"(?:[A-Za-z-]*)?\s?(.*)")
@@ -243,11 +244,12 @@ class Answer:
             if len(usage_list) == 1:
                 for i in value["content"]:
                     matcher = pattern.match(i["mean"])
-                    if remark == matcher.group(1):
+                    if len(remark_set & Set([matcher.group(1)])) != 0:
                         return key
             else:
                 for content_list in value["content"]:
-                    usages = content_list["usage"].get(remark) or adapter.usage_get_remark(content_list["usage"], remark)
+                    usages = content_list["usage"].get(remark)\
+                             or adapter.usage_get_remark(content_list["usage"], remark)
                     if usages is not None:
                         for usage in usages:
                             if len(usage_list) - 1 != len(usage_list_set & Set(usage)):
