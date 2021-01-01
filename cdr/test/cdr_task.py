@@ -95,9 +95,66 @@ class CDRTask:
                                              max_time=settings.max_random_time)
         time.sleep(time_spent / 1000)
         #   根据获取到的答案与现行答案进行匹配
+        skip_times = 0
+        has_chance = True
+        while has_chance:
+            answer_id, is_skip = CDRTask.task_find_answer(answer, topic_mode, content, remark, options, skip_times)
+            if is_skip:
+                return CDRTask.skip_answer(topic_code, topic_mode, type_mode[type_id])
+                # 答案验证
+            try:
+                if topic_mode == 31:
+                    tem_list = answer_id
+                    for i in range(0, data["answer_num"]):
+                        answer_id = tem_list[i]
+                        topic_code, _ = CDRTask.verify_answer(answer_id, topic_code, type_mode[type_id])
+                        if not settings.is_random_time:
+                            time.sleep(0.1)
+                        else:
+                            time.sleep(0.6)
+                    has_chance = False
+                else:
+                    topic_code, has_chance = CDRTask.verify_answer(answer_id, topic_code, type_mode[type_id])
+            except AnswerWrong as e:
+                topic_code = e.topic_code
+                if e.has_chance:
+                    skip_times += 1
+                    Log.w(e, is_show=False)
+                    Log.w(f"第{skip_times}次查询答案出错，尝试跳过原答案进行搜索", is_show=False)
+                    continue
+                Log.v("")
+                Log.w("答案错误！")
+                Log.w(e)
+                Log.w("请携带error-last.txt寻找GM排除适配问题")
+                Log.w(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt")
+                Log.create_error_txt()
+                input("等待错误检查（按下回车键即可继续执行）")
+                return CDRTask.skip_answer(topic_code, topic_mode, type_mode[type_id])
+            else:
+                has_chance = False
+                Log.v("   Done！", is_show=is_show)
+        timestamp = Tool.time()
+        sign = Tool.md5(f"time_spent={time_spent}&timestamp={timestamp}&topic_code={topic_code}"
+                        + f"&versions={CDR_VERSION}ajfajfamsnfaflfasakljdlalkflak")
+        data = {
+            "topic_code": topic_code,
+            "time_spent": time_spent,
+            "timestamp": timestamp,
+            "versions": CDR_VERSION,
+            "sign": sign
+        }
+        res = requests.post(
+            url='https://gateway.vocabgo.com/Student/' + type_mode[type_id] + '/SubmitAnswerAndSave',
+            json=data, headers=settings.header, timeout=settings.timeout)
+        json = res.json()
+        res.close()
+        return json
+
+    @staticmethod
+    def task_find_answer(answer: Answer, topic_mode: int, content, remark, options: list, skip_times):
+        # 答案查找
         is_skip = None
         answer_id = None
-        # 答案查找
         try:
             if topic_mode == 11:
                 assist_word = content[content.find("{") + 1:content.find("}")].strip()
@@ -119,7 +176,7 @@ class CDRTask:
             elif topic_mode == 43 or topic_mode == 44:
                 answer_id = answer.find_answer_by_43(content, remark, options)
             elif topic_mode == 51 or topic_mode == 52:
-                answer_id = answer.find_answer_by_51(content, remark)
+                answer_id = answer.find_answer_by_51(content, remark, skip_times)
             elif topic_mode == 53 or topic_mode == 54:
                 answer_id = answer.find_answer_by_53(content, remark)
             else:
@@ -131,48 +188,7 @@ class CDRTask:
             Log.w(f"{e}")
             CDRTask.wait_admin_choose()
             is_skip = True
-        if is_skip:
-            return CDRTask.skip_answer(topic_code, topic_mode, type_mode[type_id])
-            # 答案验证
-        try:
-            if topic_mode == 31:
-                tem_list = answer_id
-                for i in range(0, data["answer_num"]):
-                    answer_id = tem_list[i]
-                    topic_code = CDRTask.verify_answer(answer_id, topic_code, type_mode[type_id])
-                    if not settings.is_random_time:
-                        time.sleep(0.1)
-                    else:
-                        time.sleep(0.6)
-            else:
-                topic_code = CDRTask.verify_answer(answer_id, topic_code, type_mode[type_id])
-        except AnswerWrong as e:
-            Log.w(e)
-            Log.w("请携带error-last.txt寻找GM排除适配问题")
-            Log.w(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt")
-            Log.create_error_txt()
-            topic_code = e.topic_code
-            input("等待错误检查（按下回车键即可继续执行）")
-            if e.is_skip:
-                return CDRTask.skip_answer(topic_code, topic_mode, type_mode[type_id])
-        else:
-            Log.v("   Done！", is_show=is_show)
-        timestamp = Tool.time()
-        sign = Tool.md5(f"time_spent={time_spent}&timestamp={timestamp}&topic_code={topic_code}"
-                        + f"&versions={CDR_VERSION}ajfajfamsnfaflfasakljdlalkflak")
-        data = {
-            "topic_code": topic_code,
-            "time_spent": time_spent,
-            "timestamp": timestamp,
-            "versions": CDR_VERSION,
-            "sign": sign
-        }
-        res = requests.post(
-            url='https://gateway.vocabgo.com/Student/' + type_mode[type_id] + '/SubmitAnswerAndSave',
-            json=data, headers=settings.header, timeout=settings.timeout)
-        json = res.json()
-        res.close()
-        return json
+        return answer_id, is_skip
 
     @staticmethod
     def get_random_time(topic_mode, min_time=5, max_time=0, is_max=False):
@@ -224,22 +240,20 @@ class CDRTask:
             "sign": sign
         }
         res = requests.post(url=f'https://gateway.vocabgo.com/Student/{type_mode}/VerifyAnswer',
-                                 json=data, headers=settings.header, timeout=settings.timeout)
+                            json=data, headers=settings.header, timeout=settings.timeout)
         json_data = res.json()
         res.close()
         if json_data['code'] == 10017:
-            Log.w(json_data['msg'])
+            Log.w(f"\n{json_data['msg']}")
             Log.w("该限制为词达人官方行为，与作者无关\n按回车退出程序")
             input()
             sys.exit(0)
         if json_data['data']["answer_result"] == 1:
             pass
         else:
-            Log.v("")
-            Log.w("答案错误！")
             Log.w(json_data, is_show=False)
-            raise AnswerWrong(data, json_data['data']['topic_code'], json_data['data']["over_status"] == 2)
-        return json_data['data']['topic_code']
+            raise AnswerWrong(data, json_data['data']['topic_code'], json_data['data']["over_status"] != 1)
+        return json_data['data']['topic_code'], json_data['data']["over_status"] != 1
 
     @staticmethod
     def skip_answer(topic_code: str, topic_mode: int, type_mode: str) -> dict:

@@ -229,7 +229,8 @@ class Answer:
     # 52与其处理方式一致
     # content 带{}的短语
     # remark 短语翻译
-    def find_answer_by_51(self, content: str, remark: str) -> str:
+    # skip_times 跳过成功匹配答案的次数
+    def find_answer_by_51(self, content: str, remark: str, skip_times: int) -> str:
         Log.d("\nfind_answer_by_51")
         Log.d(content)
         Log.d(remark)
@@ -245,6 +246,9 @@ class Answer:
                 for i in value["content"]:
                     matcher = pattern.match(i["mean"])
                     if len(remark_set & Set([matcher.group(1)])) != 0:
+                        if skip_times != 0:
+                            skip_times -= 1
+                            continue
                         return key
             else:
                 for content_list in value["content"]:
@@ -256,6 +260,9 @@ class Answer:
                                 continue
                             for index, word in enumerate(usage):
                                 if word != usage_list[index]:
+                                    if skip_times != 0:
+                                        skip_times -= 1
+                                        continue
                                     # 原本只需返回usage[index]即可
                                     # 但因兼容CET4_3的at one's {}'s end(智穷力竭)特殊案例，不得不复杂化
                                     return adapter.answer_51(usage_list[index], usage[index])

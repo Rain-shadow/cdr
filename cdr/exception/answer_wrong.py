@@ -8,10 +8,10 @@
 
 class AnswerWrong(Exception):
 
-    def __init__(self, data: dict, topic_code: str, is_skip: bool):
+    def __init__(self, data: dict, topic_code: str, has_chance: bool):
         self._data = data
         self.topic_code = topic_code
-        self.is_skip = is_skip
+        self.has_chance = has_chance
 
     def __str__(self):
         return f"{self._data}"

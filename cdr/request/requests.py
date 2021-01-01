@@ -33,7 +33,7 @@ def __judge_code(res: requests.models.Response) -> requests.models.Response:
         except JSONDecodeError:
             pass
         else:
-            if json_data and json_data["code"] == 0:
+            if json_data and (json_data["code"] == 0 or json_data["code"] == 10002):
                 Log.e(f"{json_data['code']}, {res.url}, {json_data['msg']}", is_show=False)
     return res
 
