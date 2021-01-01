@@ -31,16 +31,29 @@ class IOrigin:
     def process_word_mean(mean: str) -> list:
         return []
 
+    # 处理选项中英语例句的特殊情况（目前只是遇见多空格）
     @staticmethod
     def process_option_sentence(sentence: str) -> str:
         pass
 
+    # 处理选项中短语翻译的特殊情况（如多出莫名其妙的符号）
     @staticmethod
     def process_option_usage(usage: str) -> str:
         pass
 
+    # 处理题型32中一个选项中包含多个单词的情况
     @staticmethod
-    def answer_32(options: list, usage: list) -> str:
+    def answer_32_1(options: list, usage: list) -> str:
+        pass
+
+    # 处理题型32中选项中包含奇怪的情况
+    @staticmethod
+    def answer_32_2(options: list, usage: list) -> str:
+        """
+        :param options: 原选项
+        :param usage: 已经匹配出来的短语
+        :return: 合成好的答案
+        """
         pass
 
     @staticmethod
@@ -72,11 +85,11 @@ class AnswerPattern1(IOrigin):
 
     @staticmethod
     def process_option_usage(usage: str) -> str:
-        tem = usage.replace('.', ' ').replace("…", " ").replace("-", " ").replace(",", " ")
+        tem = usage.replace('.', ' ').replace("…", " ").replace("-", " ").replace(",", " ").replace("\n", " ").strip()
         return " ".join(tem.split())
 
     @staticmethod
-    def answer_32(options: list, usage: list) -> str:
+    def answer_32_1(options: list, usage: list) -> str:
         result = []
         tem_map = {}
         for index, option in enumerate(options):
@@ -88,6 +101,14 @@ class AnswerPattern1(IOrigin):
             else:
                 result[len(result) - 1] = options[tem_map[word]]["content"]
         return ",".join(result)
+
+    @staticmethod
+    def answer_32_2(options: list, usage: list) -> str:
+        for index, value in enumerate(usage):
+            for v in options:
+                if value == v["content"].strip():
+                    usage[index] = v["content"]
+        return ",".join(usage)
 
     @staticmethod
     def answer_51(option_word: str, word: str) -> str:

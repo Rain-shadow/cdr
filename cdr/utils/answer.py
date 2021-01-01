@@ -151,14 +151,15 @@ class Answer:
                     for usage in usage_list:
                         if len(option_set & Set(usage)) == len(usage):
                             if len(usage) == blank_count:
-                                return ",".join(usage)
+                                # 因原选项中可能会出现多出空格问题
+                                return adapter.answer_32_2(options, usage)
                             # 修复题库中同时存在
                             # "迫切需要": ["an", "urgent", "need"]
                             # "迫切需要": ["urgent", "need"]
                             # 导致的答案匹配出错，该BUG由群友183***092提供，156行为其贡献
                             if len(usage) > blank_count:
                                 # 下列情况为一个选项中存在多个单词（说好的一个单词一个选项呢？？？）
-                                result = adapter.answer_32(options, usage)
+                                result = adapter.answer_32_1(options, usage)
                                 if result:
                                     return result
         raise AnswerNotFoundException(32)

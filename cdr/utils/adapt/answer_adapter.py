@@ -67,9 +67,16 @@ class AnswerAdapter:
         return usage
 
     # 无则返回None
-    def answer_32(self, options: list, usage: list) -> str:
+    def answer_32_1(self, options: list, usage: list) -> str:
         for cls in self.__interfaces:
-            result = cls.answer_32(options, usage)
+            result = cls.answer_32_1(options, usage)
+            if result:
+                return result
+
+    # 无则返回None
+    def answer_32_2(self, options: list, usage: list) -> str:
+        for cls in self.__interfaces:
+            result = cls.answer_32_2(options, usage)
             if result:
                 return result
 
