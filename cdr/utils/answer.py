@@ -20,7 +20,7 @@ class Answer:
     # assist_word 时态不确定的单词
     # remark 例句的翻译
     # options 题目选项
-    def find_answer_by_11(self, assist_word: str, remark: str, options: list) -> str:
+    def find_answer_by_11(self, assist_word: str, remark: str, options: list, skip_times: int) -> str:
         Log.d("\nfind_answer_by_11")
         Log.d(assist_word)
         Log.d(options)
@@ -41,6 +41,8 @@ class Answer:
                         # 若选项集合与题库集合的交集存在，则说明该选项等于题库中的某个选项
                         # 由 mean == content["mean"] 拓展适配得来
                         if len(Set(tem_list) & Set(adapter.process_word_mean(content["mean"]))) != 0:
+                            if skip_times != 0:
+                                continue
                             return str(mean["answer_tag"])
         raise AnswerNotFoundException(11)
 

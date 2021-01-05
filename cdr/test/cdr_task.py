@@ -158,7 +158,7 @@ class CDRTask:
         try:
             if topic_mode == 11:
                 assist_word = content[content.find("{") + 1:content.find("}")].strip()
-                answer_id = answer.find_answer_by_11(assist_word, remark, options)
+                answer_id = answer.find_answer_by_11(assist_word, remark, options, skip_times)
             elif topic_mode == 13:
                 assist_word = content[content.find("{") + 1:content.find("}")].strip()
                 answer_id = answer.find_answer_by_13(assist_word, remark, options)
