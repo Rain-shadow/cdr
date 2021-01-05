@@ -70,6 +70,7 @@ class MyselfTask(CDRTask):
                     t_list = []
                     self.thread_count = 0
             # 防止线程数量不足而独立于主线程完成任务
+            self._progress.clear()
             for thread in t_list:
                 thread.join()
         else:
@@ -126,11 +127,6 @@ class MyselfTask(CDRTask):
                                    headers=settings.header, timeout=time_out)
                 json_data = res.json()
                 res.close()
-                if json_data['code'] == 10017:
-                    Log.w("\n" + json_data['msg'])
-                    Log.w("注：该限制为词达人官方行为，与作者无关\n按回车退出程序")
-                    input()
-                    sys.exit(0)
                 Log.i("自选-学习任务", is_show=is_show)
                 #   判断是否需要选词
                 if json_data["code"] == 20001 and MyselfTask.choose_word(task, task_id, grade):
@@ -341,7 +337,7 @@ class MyselfTask(CDRTask):
               + "/" + str(json_data["data"]["topic_total"]) + ".", end='', is_show=is_show)
         if now_score != 100 and 100.0 * json_data["data"]["topic_done_num"] / \
                 json_data["data"]["topic_total"] + 5 >= now_score:
-            if not settings.r["isRandomTime"]:
+            if not settings.is_random_time:
                 time.sleep(0.1)
             else:
                 time.sleep(2)

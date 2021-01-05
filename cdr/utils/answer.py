@@ -256,7 +256,9 @@ class Answer:
                              or adapter.usage_get_remark(content_list["usage"], remark)
                     if usages is not None:
                         for usage in usages:
-                            if len(usage_list) - 1 != len(usage_list_set & Set(usage)):
+                            # 修复长度判断，该bug由群友169***762提供
+                            if len(usage_list) - 1 != len(usage_list_set & Set(usage))\
+                                    and len(usage_list) != len(usage):
                                 continue
                             for index, word in enumerate(usage):
                                 if word != usage_list[index]:

@@ -10,6 +10,7 @@ from requests import ReadTimeout
 from requests.exceptions import ProxyError, ConnectionError
 
 from cdr.request.network_error import NetworkError
+from cdr.request.upper_limit_error import UpperLimitError
 from cdr.utils.log import Log
 from cdr.config import LOG_DIR_PATH
 
@@ -34,6 +35,14 @@ def __my_except_hook(exc_type, exc_value, tb):
     elif exc_type == NetworkError:
         Log.e(f"词达人自己崩了！{exc_value.msg}")
         Log.create_error_txt()
+    elif exc_type == SystemExit:
+        pass
+    elif exc_type == UpperLimitError:
+        Log.w(f"\n{exc_type}", is_show=False)
+        Log.w(f"\n{exc_value.msg}")
+        Log.w("注：该限制为词达人官方行为，与作者无关\n按回车退出程序")
+        input()
+        sys.exit(0)
     else:
         Log.e("未知异常，请上报此错误（error-last.txt）给GM")
         Log.e(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt")

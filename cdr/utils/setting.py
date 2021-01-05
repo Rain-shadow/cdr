@@ -23,11 +23,11 @@ class Settings(object):
     _instance_lock = threading.Lock()
 
     def __init__(self):
-        if os.path.exists(CONFIG_DIR_PATH + "config.txt") \
-                and _get_encode_info(CONFIG_DIR_PATH + "config.txt") != "utf-8":
+        if os.path.exists(CONFIG_DIR_PATH + "config.txt")\
+        and _get_encode_info(CONFIG_DIR_PATH + "config.txt") != "utf-8":
             Log.w("检测到配置文件格式有误，自动转换文件格式")
             with open(CONFIG_DIR_PATH + "config.txt", mode='r',
-                      encoding=_get_encode_info(CONFIG_DIR_PATH + "config.txt")) as cfg:
+                encoding=_get_encode_info(CONFIG_DIR_PATH + "config.txt")) as cfg:
                 tem = cfg.read().encode('utf-8').decode('utf-8')
             with open(CONFIG_DIR_PATH + "config.txt", mode='w', encoding='utf-8') as cfg:
                 cfg.write(tem)
@@ -65,7 +65,7 @@ class Settings(object):
                 "警告！关闭该项会造成控分系统出现巨大误差，会让实际分数远高于目标分数（当然不可能超过100）",
                 "isRandomScore: 是否开启控分选项，实际成绩总是略高于目标分数，但不超过100。取值[true/false]",
                 "isStyleByPercent: 在多任务中是否让进度条以百分比显示，对于任务量较重的建议关闭，将以具体数量显示。取值[true/false]",
-                "multipleTask: 同时进行的任务数量，最低为1，最大为5，若格式错误将重置为1",
+                "multipleTask: 同时进行的任务数量，最低为1，最大为6，若格式错误将重置为1",
                 "警告！该功能为实验性功能，或许会存在未知BUG！请谨慎开启！",
                 "警告！虽在个人测试中未有封号现象，但无法保证该现象为普遍现象，更无法保证以后也如此，请谨慎开启！",
                 "maxRandomTime: 最大随机时间，其值不得小于minRandomTime，单位：秒",
@@ -147,6 +147,7 @@ class Settings(object):
 
     @property
     def is_random_time(self) -> bool:
+        self.is_random_time = self._is_random_time
         return self._is_random_time
 
     @is_random_time.setter
@@ -158,17 +159,19 @@ class Settings(object):
 
     @property
     def is_random_score(self) -> bool:
+        self.is_random_score = self._is_random_score
         return self._is_random_score
 
     @is_random_score.setter
     def is_random_score(self, value):
         if isinstance(value, bool):
-            self.is_random_score = value
+            self._is_random_score = value
         else:
-            self.is_random_score = True
+            self._is_random_score = True
 
     @property
     def is_style_by_percent(self):
+        self.is_style_by_percent = self._is_style_by_percent
         return self._is_style_by_percent
 
     @is_style_by_percent.setter
@@ -180,10 +183,11 @@ class Settings(object):
 
     @property
     def is_multiple_task(self) -> bool:
-        return self._multiple_task != 1
+        return self.multiple_task != 1
 
     @property
     def multiple_task(self):
+        self.multiple_task = self._multiple_task
         return self._multiple_task
 
     @multiple_task.setter
@@ -191,13 +195,14 @@ class Settings(object):
         if not isinstance(value, int):
             self._multiple_task = 1
         else:
-            if self._multiple_task > 5 or self._multiple_task < 1:
+            if value > 6 or value < 1:
                 self._multiple_task = 1
             else:
                 self._multiple_task = value
 
     @property
     def min_random_time(self):
+        self.min_random_time = self._min_random_time
         return self._min_random_time
 
     @min_random_time.setter
@@ -205,13 +210,14 @@ class Settings(object):
         if not isinstance(value, int) and not isinstance(value, float):
             self._min_random_time = 5
         else:
-            if value > 20 or value < 1:
+            if value > 20 or value < 0.2:
                 self._min_random_time = 5
             else:
                 self._min_random_time = value
 
     @property
     def max_random_time(self):
+        self.max_random_time = self._max_random_time
         return self._max_random_time
 
     @max_random_time.setter
@@ -226,6 +232,7 @@ class Settings(object):
 
     @property
     def base_score(self):
+        self.base_score = self._base_score
         return self._base_score
 
     @base_score.setter
@@ -237,6 +244,7 @@ class Settings(object):
 
     @property
     def offset_score(self):
+        self.offset_score = self._offset_score
         return self._offset_score
 
     @offset_score.setter

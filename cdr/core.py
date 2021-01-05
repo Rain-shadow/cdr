@@ -47,6 +47,7 @@ def do_homework():
         else:
             Log.v(f"\n{json['user_info']['student_name']}（{json['user_info']['class_name']}）\n")
         Log.v("1.班级任务\n2.自选任务\n3.删除本地授权信息（可更换账号刷题）\n\n0.退出\n")
+        settings.save()
         choose = input("请输入序号：")
         if choose == "1":
             Log.i("正在加载任务列表中，请稍等......")

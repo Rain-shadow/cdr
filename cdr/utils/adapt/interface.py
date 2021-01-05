@@ -85,8 +85,10 @@ class AnswerPattern1(IOrigin):
 
     @staticmethod
     def process_option_usage(usage: str) -> str:
+        #去汉字
+        re.sub(r"[\u4E00-\u9FA5]", "", usage)
         #去除ZZ的图标字符串
-        tem = re.sub(r"\\[uU][eE][0-9]{3}", "", usage.encode('unicode-escape').decode("utf-8"))\
+        tem = re.sub(r"\\[uU][eE][0-9a-fA-F]{3}", "", usage.encode('unicode-escape').decode("utf-8"))\
             .encode('utf-8').decode("unicode-escape")
         tem = tem.replace('.', ' ').replace("…", " ").replace("-", " ").replace(",", " ").replace("\n", "").strip()
         return " ".join(tem.split())
@@ -140,5 +142,6 @@ class AnswerPattern3(IOrigin):
 
     @staticmethod
     def process_option_mean(mean: str) -> list:
-        tem = re.sub(r"[(（].*?[）)]", "", mean)
+        # 去除多余的<>
+        tem = re.sub(r"[<(（].*?[）)>]", "", mean)
         return [tem, Tool.sort_str(tem)]
