@@ -136,11 +136,6 @@ class ClassTask(CDRTask):
                                    headers=settings.header, params=data, timeout=time_out)
                 json_data = res.json()
                 res.close()
-                if json_data['code'] == 10017:
-                    Log.w("\n" + json_data['msg'])
-                    Log.w("注：该限制为词达人官方行为，与作者无关\n按回车退出程序")
-                    input()
-                    sys.exit(0)
                 if task_type == 1:
                     #   判断是否需要选词
                     if json_data["code"] == 20001 and ClassTask.choose_word(course_id, task_id, task_type):

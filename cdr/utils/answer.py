@@ -260,7 +260,7 @@ class Answer:
                         for usage in usages:
                             # 修复长度判断，该bug由群友169***762提供
                             if len(usage_list) - 1 != len(usage_list_set & Set(usage))\
-                                    and len(usage_list) != len(usage):
+                                    or len(usage_list) != len(usage):
                                 continue
                             for index, word in enumerate(usage):
                                 if word != usage_list[index]:

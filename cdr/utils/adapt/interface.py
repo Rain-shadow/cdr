@@ -69,7 +69,7 @@ class AnswerPattern1(IOrigin):
         tem = remark.replace('.', ' ').replace("…", " ").replace("-", " ").replace(",", " ")
         # 处理因清理"..."而造成的多余空格
         tem = " ".join(tem.split())
-        return usage_list.get(tem)
+        return usage_list.get(tem) or usage_list.get(remark.replace("…", "", 1).strip())
 
     @staticmethod
     def process_option_mean(mean: str) -> list:
