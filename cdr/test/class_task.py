@@ -153,6 +153,13 @@ class ClassTask(CDRTask):
                                        headers=settings.header, params=data, timeout=time_out)
                     json_data = res.json()
                     res.close()
+                    if json_data["code"] == 21006:
+                        self.verify_human(task_id)
+                        data["timestamp"] = Tool.time()
+                        res = requests.get(url='https://gateway.vocabgo.com/Student/ClassTask/StartAnswer',
+                                           headers=settings.header, params=data, timeout=time_out)
+                        json_data = res.json()
+                        res.close()
                     time.sleep(1)
                     if json_data["code"] == 0 and json_data["msg"] is not None \
                             and json_data["msg"].find("返回首页") != -1:

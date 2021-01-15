@@ -120,13 +120,26 @@ class MyselfTask(CDRTask):
                 task_id = json_data["data"]["task_id"]
                 grade = json_data["data"]["grade"]
                 time.sleep(1)
-                res = requests.get(url="https://gateway.vocabgo.com/Student/StudyTask/StartAnswer?task_id="
-                f"{task_id:d}&task_type={task['task_type']:d}&course_id={task['course_id']}"
-                f"&list_id={task['list_id']}&grade={grade:d}"
-                f"&timestamp={Tool.time()}&versions={CDR_VERSION}",
-                                   headers=settings.header, timeout=time_out)
+                data = {
+                    "task_id": task_id,
+                    "task_type": task['task_type'],
+                    "course_id": task['course_id'],
+                    "list_id": task['list_id'],
+                    "grade": grade,
+                    "timestamp": Tool.time(),
+                    "versions": CDR_VERSION
+                }
+                res = requests.get(url="https://gateway.vocabgo.com/Student/StudyTask/StartAnswer",
+                                   params=data, headers=settings.header, timeout=time_out)
                 json_data = res.json()
                 res.close()
+                if json_data["code"] == 21006:
+                    self.verify_human(task_id)
+                    data["timestamp"] = Tool.time()
+                    res = requests.get(url='https://gateway.vocabgo.com/Student/ClassTask/StartAnswer',
+                                       headers=settings.header, params=data, timeout=time_out)
+                    json_data = res.json()
+                    res.close()
                 Log.i("自选-学习任务", is_show=is_show)
                 #   判断是否需要选词
                 if json_data["code"] == 20001 and MyselfTask.choose_word(task, task_id, grade):
