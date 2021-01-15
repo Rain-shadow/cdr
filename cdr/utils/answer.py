@@ -33,15 +33,14 @@ class Answer:
         for answer in answer_list:
             for content in answer["content"]:
                 if content["example"].get(remark) or adapter.example_get_remark(content["example"], remark):
-                    # 修复数组数据不全问题，该BUG由群友729***367提供
-                    tem_list = []
                     for mean in options:
-                        tem_list.append(mean["content"])
+                        tem_list = [mean["content"]]
                         tem_list.extend(adapter.process_option_mean(mean["content"]))
                         # 若选项集合与题库集合的交集存在，则说明该选项等于题库中的某个选项
                         # 由 mean == content["mean"] 拓展适配得来
                         if len(Set(tem_list) & Set(adapter.process_word_mean(content["mean"]))) != 0:
                             if skip_times != 0:
+                                skip_times -= 1
                                 continue
                             return str(mean["answer_tag"])
         raise AnswerNotFoundException(11)
@@ -134,7 +133,7 @@ class Answer:
     # remark 单词的短语翻译
     # options 题目选项
     # blank_count 填空所需单词数量
-    def find_answer_by_32(self, remark: str, options: list, blank_count: int) -> str:
+    def find_answer_by_32(self, remark: str, options: list, blank_count: int, skip_times: int) -> str:
         Log.d("\nfind_answer_by_32")
         Log.d(options)
         Log.d(f"{blank_count:d}")
@@ -144,6 +143,7 @@ class Answer:
             option_list.extend(re.split(r"\s+", adapter.process_option_usage(usage["content"])))
         Log.d(option_list, is_show=False)
         option_set = Set(option_list)
+        wrong_set = set()
 
         for value in self._course.data.values():
             for content in value["content"]:
@@ -152,6 +152,10 @@ class Answer:
                     Log.d(usage_list, is_show=False)
                     for usage in usage_list:
                         if len(option_set & Set(usage)) == len(usage):
+                            if skip_times != 0 or adapter.answer_32_2(options, usage) in wrong_set:
+                                skip_times -= 1
+                                wrong_set.add(adapter.answer_32_2(options, usage))
+                                continue
                             if len(usage) == blank_count:
                                 # 因原选项中可能会出现多出空格问题
                                 return adapter.answer_32_2(options, usage)

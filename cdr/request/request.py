@@ -34,10 +34,11 @@ def __judge_code(res: requests.models.Response) -> requests.models.Response:
         except JSONDecodeError:
             pass
         else:
-            if json_data and (json_data["code"] == 0 or json_data["code"] == 10002):
-                Log.e(f"{json_data['code']}, {res.url}, {json_data['msg']}", is_show=False)
-            if json_data and json_data["code"] == 10017:
-                raise UpperLimitError(res.status_code, res.url, res.content.decode("utf-8"))
+            if res.url.find("gateway.vocabgo.com") != -1:
+                if json_data and (json_data["code"] == 0 or json_data["code"] == 10002):
+                    Log.e(f"{json_data['code']}, {res.url}, {json_data['msg']}", is_show=False)
+                if json_data and json_data["code"] == 10017:
+                    raise UpperLimitError(res.status_code, res.url, res.json()["msg"])
     return res
 
 

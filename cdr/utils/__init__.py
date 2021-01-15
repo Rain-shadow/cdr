@@ -10,7 +10,8 @@ from .setting import Settings, _settings
 from .course import Course
 from .answer import Answer
 from .tool import Tool
+from .verification_code import VerificationCode
 
 settings = _settings
 
-__all__ = ["Log", "settings", "Set", "Settings", "Course", "Answer", "Tool"]
+__all__ = ["Log", "settings", "Set", "Settings", "Course", "Answer", "Tool", "VerificationCode"]

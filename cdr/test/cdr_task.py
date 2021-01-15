@@ -170,7 +170,8 @@ class CDRTask:
             elif topic_mode == 31:
                 answer_id = answer.find_answer_by_31(remark, options)
             elif topic_mode == 32:
-                answer_id = answer.find_answer_by_32(remark, options, Tool.count_character_in_str("_", content))
+                answer_id = answer.find_answer_by_32(remark, options,
+                                                     Tool.count_character_in_str("_", content), skip_times)
             elif topic_mode == 41 or topic_mode == 42:
                 answer_id = answer.find_answer_by_41(content, remark, options)
             elif topic_mode == 43 or topic_mode == 44:
@@ -254,6 +255,55 @@ class CDRTask:
             Log.w(json_data, is_show=False)
             raise AnswerWrong(data, json_data['data']['topic_code'], json_data['data']["over_status"] != 1)
         return json_data['data']['topic_code'], json_data['data']["over_status"] != 1
+
+    def verify_human(self, task_id: int, check_type: str = "answer"):
+        self._lock.acquire()    # 防止多线程下输入混乱，用户无法分清
+        data = {
+            "check_type": check_type,
+            "task_id": task_id,
+            "timestamp": Tool.time(),
+            "versions": CDR_VERSION,
+        }
+        res = requests.get("https://gateway.vocabgo.com/Student/Captcha/Get",
+                           params=data, headers=settings.header, timeout=settings.timeout)
+        json_data = res.json()
+        res.close()
+        if json_data["code"] == 0 and json_data["msg"] == "无需验证":
+            return
+        elif json_data["code"] == 0:
+            Log.w(json_data["msg"])
+            Log.w("词达人验证服务器暂时崩溃，请稍后再试")
+            input()
+        Log.i("验证码即将展示，若看不清可输入-1重新生成")
+        from cdr.utils import VerificationCode
+        code = VerificationCode.get_vc(json_data["data"]["original_image"], task_id)
+        while code == "-1":
+            data["timestamp"] = Tool.time()
+            res = requests.get("https://gateway.vocabgo.com/Student/Captcha/Get",
+                               params=data, headers=settings.header, timeout=settings.timeout)
+            json_data = res.json()
+            res.close()
+            if json_data["code"] == 0 and json_data["msg"] == "无需验证":
+                return
+            elif json_data["code"] == 0:
+                Log.w(json_data["msg"])
+                Log.w("词达人验证服务器暂时崩溃，请稍后再试")
+                input()
+            Log.i("验证码即将展示，若看不清可输入-1重新生成")
+            code = VerificationCode.get_vc(json_data["data"]["original_image"], task_id)
+        timestamp = Tool.time()
+        sign = Tool.md5(f"captcha_code={code}&task_id={task_id}&timestamp={timestamp}&versions={CDR_VERSION}"
+                        "ajfajfamsnfaflfasakljdlalkflak")
+        data = {
+            "captcha_code": code,
+            "sign": sign,
+            "task_id": task_id,
+            "timestamp": timestamp,
+            "versions": CDR_VERSION
+        }
+        res = requests.post("https://gateway.vocabgo.com/Student/Captcha/Check", json=data)
+        # TODO 验证返回值，词达人这是上线测试一下的？怎么中途就没了？？？
+        self._lock.release()
 
     @staticmethod
     def skip_answer(topic_code: str, topic_mode: int, type_mode: str) -> dict:

@@ -16,7 +16,7 @@ from cdr.utils import settings, Log, Tool
 def do_homework():
     Login()
     #   模拟加载流程
-    requests.get("https://app.vocabgo.com/student/", headers=settings.header).close()
+    requests.options("https://app.vocabgo.com/student/", headers=settings.header).close()
     res = requests.get("https://gateway.vocabgo.com/Student/Main?timestamp="
                        f"{Tool.time()}&versions={CDR_VERSION}", headers=settings.header)
     json = res.json()["data"]
@@ -33,8 +33,7 @@ def do_homework():
         "versions": CDR_VERSION,
         "sign": sign
     }
-    res = requests.post(url='https://gateway.vocabgo.com/Auth/Wechat/Config',
-                       headers=settings.header, json=data)
+    res = requests.post(url='https://gateway.vocabgo.com/Auth/Wechat/Config', headers=settings.header, json=data)
     Log.i("WechatConfig:")
     Log.i(res.content.decode("utf8"))
     res.close()
@@ -71,3 +70,7 @@ def do_homework():
         else:
             Tool.cls()
             Log.i("输入格式有误！\n")
+        res = requests.get("https://gateway.vocabgo.com/Student/Main?timestamp="
+                           f"{Tool.time()}&versions={CDR_VERSION}", headers=settings.header)
+        json = res.json()["data"]
+        res.close()
