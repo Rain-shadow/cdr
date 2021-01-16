@@ -250,7 +250,7 @@ class CDRTask:
             self.verify_human(task_id)
             data["timestamp"] = Tool.time()
             res = requests.post(url=f'https://gateway.vocabgo.com/Student/{type_mode}/VerifyAnswer',
-                                json=data, headers=settings.header, params=data, timeout=settings.time_out)
+                                json=data, headers=settings.header, params=data, timeout=settings.timeout)
             json_data = res.json()
             res.close()
         if json_data['code'] == 10017:
@@ -298,9 +298,11 @@ class CDRTask:
                 if json_data["code"] == 0 and json_data["msg"] == "无需验证":
                     return
                 elif json_data["code"] == 0:
+                    Log.v("")
                     Log.w(json_data["msg"])
                     Log.w("词达人验证服务器暂时崩溃，请稍后再试")
-                    input()
+                    input("按回车重新尝试生成验证码")
+                    continue
                 Log.i("验证码即将展示，若看不清可输入-1重新生成")
                 code = VerificationCode.get_vc(json_data["data"]["original_image"], task_id)
             timestamp = Tool.time()

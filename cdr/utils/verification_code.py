@@ -6,7 +6,6 @@
 # @File  : verification_code.py
 import base64
 import io
-import matplotlib.pyplot as plt
 from PIL import Image
 from cdr.config import CONFIG_DIR_PATH
 
@@ -20,6 +19,5 @@ class VerificationCode:
         image = io.BytesIO(img_b64decode)
         img = Image.open(image)
         img.save(f"{CONFIG_DIR_PATH}验证码-{task_id}.png")
-        plt.imshow(img)
-        plt.show()
+        img.show()
         return input(f"验证码-{task_id}：")

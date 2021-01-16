@@ -45,8 +45,8 @@ def do_homework():
             Log.v(f"\n{json['user_info']['student_name']}（未加入班级）\n")
         else:
             Log.v(f"\n{json['user_info']['student_name']}（{json['user_info']['class_name']}）\n")
-        Log.v("1.班级任务\n2.自选任务\n3.删除本地授权信息（可更换账号刷题）\n\n0.退出\n")
-        Log.v("#.加群1085739587免费获取最新版，更少的BUG、更高的准确率")
+        Log.v("1.班级任务\n2.自选任务\n3.删除本地授权信息（可更换账号刷题）"
+              "\n\n#.加群1085739587免费获取最新版，更少的BUG、更高的准确率\n\n0.退出\n")
         settings.save()
         choose = input("请输入序号：")
         if choose == "1":
