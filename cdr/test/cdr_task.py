@@ -13,7 +13,7 @@ from threading import Lock
 from cdr.exception import AnswerNotFoundException, AnswerWrong
 from cdr.utils import settings, Answer, Course, Log, Tool
 from cdr.eprogress import LineProgress, MultiProgressManager
-from cdr.config import CDR_VERSION, LOG_DIR_PATH
+from cdr.config import CDR_VERSION, CONFIG_DIR_PATH, LOG_DIR_PATH
 
 
 class CDRTask:
@@ -78,8 +78,7 @@ class CDRTask:
         self._thread_count = value
         self._lock.release()
 
-    @staticmethod
-    def find_answer_and_finish(answer: Answer, data: dict, type_id: int) -> dict:
+    def find_answer_and_finish(self, answer: Answer, data: dict, type_id: int, task_id: int) -> dict:
         is_show = not settings.is_multiple_task
         type_mode = ["StudyTask", "ClassTask"]
         content = data["stem"]["content"]
@@ -107,14 +106,14 @@ class CDRTask:
                     tem_list = answer_id
                     for i in range(0, data["answer_num"]):
                         answer_id = tem_list[i]
-                        topic_code, _ = CDRTask.verify_answer(answer_id, topic_code, type_mode[type_id])
+                        topic_code, _ = self.verify_answer(answer_id, topic_code, type_mode[type_id], task_id)
                         if not settings.is_random_time:
                             time.sleep(0.1)
                         else:
-                            time.sleep(0.6)
+                            time.sleep(random.randint(3 * 1000, 5 * 1000) / 1000)
                     has_chance = False
                 else:
-                    topic_code, has_chance = CDRTask.verify_answer(answer_id, topic_code, type_mode[type_id])
+                    topic_code, has_chance = self.verify_answer(answer_id, topic_code, type_mode[type_id], task_id)
             except AnswerWrong as e:
                 topic_code = e.topic_code
                 if e.has_chance:
@@ -148,6 +147,10 @@ class CDRTask:
             json=data, headers=settings.header, timeout=settings.timeout)
         json = res.json()
         res.close()
+        #  请求模拟
+        # requests.post(
+        #     url='https://gateway.vocabgo.com/Student/Course/GetStudyWordInfo',
+        #     json=data, headers=settings.header, timeout=settings.timeout).close()
         return json
 
     @staticmethod
@@ -228,8 +231,7 @@ class CDRTask:
             max_score = 1000
         return random.randint(min_score, max_score) / 10.0
 
-    @staticmethod
-    def verify_answer(answer: str, topic_code: str, type_mode: str):
+    def verify_answer(self, answer: str, topic_code: str, type_mode: str, task_id: int):
         timestamp = Tool.time()
         sign = Tool.md5(f"answer={answer}&timestamp={timestamp}&topic_code={topic_code}"
                         + f"&versions={CDR_VERSION}ajfajfamsnfaflfasakljdlalkflak")
@@ -244,6 +246,13 @@ class CDRTask:
                             json=data, headers=settings.header, timeout=settings.timeout)
         json_data = res.json()
         res.close()
+        if json_data["code"] == 21006:
+            self.verify_human(task_id)
+            data["timestamp"] = Tool.time()
+            res = requests.post(url=f'https://gateway.vocabgo.com/Student/{type_mode}/VerifyAnswer',
+                                json=data, headers=settings.header, params=data, timeout=settings.time_out)
+            json_data = res.json()
+            res.close()
         if json_data['code'] == 10017:
             Log.w(f"\n{json_data['msg']}")
             Log.w("该限制为词达人官方行为，与作者无关\n按回车退出程序")
@@ -261,23 +270,9 @@ class CDRTask:
         data = {
             "check_type": check_type,
             "task_id": task_id,
-            "timestamp": Tool.time(),
             "versions": CDR_VERSION,
         }
-        res = requests.get("https://gateway.vocabgo.com/Student/Captcha/Get",
-                           params=data, headers=settings.header, timeout=settings.timeout)
-        json_data = res.json()
-        res.close()
-        if json_data["code"] == 0 and json_data["msg"] == "无需验证":
-            return
-        elif json_data["code"] == 0:
-            Log.w(json_data["msg"])
-            Log.w("词达人验证服务器暂时崩溃，请稍后再试")
-            input()
-        Log.i("验证码即将展示，若看不清可输入-1重新生成")
-        from cdr.utils import VerificationCode
-        code = VerificationCode.get_vc(json_data["data"]["original_image"], task_id)
-        while code == "-1":
+        while True:
             data["timestamp"] = Tool.time()
             res = requests.get("https://gateway.vocabgo.com/Student/Captcha/Get",
                                params=data, headers=settings.header, timeout=settings.timeout)
@@ -290,19 +285,43 @@ class CDRTask:
                 Log.w("词达人验证服务器暂时崩溃，请稍后再试")
                 input()
             Log.i("验证码即将展示，若看不清可输入-1重新生成")
+            from cdr.utils import VerificationCode
             code = VerificationCode.get_vc(json_data["data"]["original_image"], task_id)
-        timestamp = Tool.time()
-        sign = Tool.md5(f"captcha_code={code}&task_id={task_id}&timestamp={timestamp}&versions={CDR_VERSION}"
-                        "ajfajfamsnfaflfasakljdlalkflak")
-        data = {
-            "captcha_code": code,
-            "sign": sign,
-            "task_id": task_id,
-            "timestamp": timestamp,
-            "versions": CDR_VERSION
-        }
-        res = requests.post("https://gateway.vocabgo.com/Student/Captcha/Check", json=data)
-        # TODO 验证返回值，词达人这是上线测试一下的？怎么中途就没了？？？
+            Log.v(code)
+            while code == "-1":
+                import os
+                os.remove(f"{CONFIG_DIR_PATH}验证码-{task_id}.png")
+                res = requests.get("https://gateway.vocabgo.com/Student/Captcha/Get",
+                                   params=data, headers=settings.header, timeout=settings.timeout)
+                json_data = res.json()
+                res.close()
+                if json_data["code"] == 0 and json_data["msg"] == "无需验证":
+                    return
+                elif json_data["code"] == 0:
+                    Log.w(json_data["msg"])
+                    Log.w("词达人验证服务器暂时崩溃，请稍后再试")
+                    input()
+                Log.i("验证码即将展示，若看不清可输入-1重新生成")
+                code = VerificationCode.get_vc(json_data["data"]["original_image"], task_id)
+            timestamp = Tool.time()
+            sign = Tool.md5(f"captcha_code={code}&task_id={task_id}&timestamp={timestamp}&versions={CDR_VERSION}"
+                            "ajfajfamsnfaflfasakljdlalkflak")
+            data = {
+                "captcha_code": code,
+                "sign": sign,
+                "task_id": task_id,
+                "timestamp": timestamp,
+                "versions": CDR_VERSION
+            }
+            res = requests.post("https://gateway.vocabgo.com/Student/Captcha/Check", json=data, headers=settings.header)
+            flag = res.json()["code"]
+            res.close()
+            if flag != 1:
+                Log.i("验证码核验错误，将重新生成验证码")
+            else:
+                import os
+                os.remove(f"{CONFIG_DIR_PATH}验证码-{task_id}.png")
+                break
         self._lock.release()
 
     @staticmethod

@@ -20,7 +20,6 @@ class VerificationCode:
         image = io.BytesIO(img_b64decode)
         img = Image.open(image)
         img.save(f"{CONFIG_DIR_PATH}验证码-{task_id}.png")
-        plt.title(f"验证码-{task_id}")
         plt.imshow(img)
         plt.show()
         return input(f"验证码-{task_id}：")

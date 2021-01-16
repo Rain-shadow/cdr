@@ -20,7 +20,7 @@ __s = requests.Session()
 __s.mount('http://', HTTPAdapter(max_retries=15))
 __s.mount('https://', HTTPAdapter(max_retries=15))
 __s.adapters.DEFAULT_RETRIES = 15
-__s.keep_alive = False
+# __s.keep_alive = False
 
 
 def __judge_code(res: requests.models.Response) -> requests.models.Response:
@@ -35,7 +35,8 @@ def __judge_code(res: requests.models.Response) -> requests.models.Response:
             pass
         else:
             if res.url.find("gateway.vocabgo.com") != -1:
-                if json_data and (json_data["code"] == 0 or json_data["code"] == 10002):
+                if json_data and (json_data["code"] == 0 or json_data["code"] == 10002
+                                  or json_data["code"] == 21006):
                     Log.e(f"{json_data['code']}, {res.url}, {json_data['msg']}", is_show=False)
                 if json_data and json_data["code"] == 10017:
                     raise UpperLimitError(res.status_code, res.url, res.json()["msg"])

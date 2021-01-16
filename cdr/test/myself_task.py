@@ -6,7 +6,6 @@
 # @File  : myself_task.py
 import json
 import gc
-import sys
 import time
 import cdr.request as requests
 
@@ -185,7 +184,8 @@ class MyselfTask(CDRTask):
                         json_data["data"]["topic_done_num"] <= json_data["data"]["topic_total"]:
                     if settings.is_multiple_task:
                         self.update_progress(task['list_id'], json_data["data"]["topic_done_num"])
-                    json_data = MyselfTask.do_question(answer, json_data, course_id, task['list_id'], now_score)
+                    json_data = self.do_question(answer, json_data, course_id,
+                                                 task['list_id'], now_score, task_id)
                 if is_show:
                     Log.i(f"【{task['task_name']}】已完成。"
                           f"分数：{MyselfTask.get_myself_task_score(course_id, task['list_id'])}")
@@ -343,8 +343,7 @@ class MyselfTask(CDRTask):
                 return task["score"]
         return 0
 
-    @staticmethod
-    def do_question(answer: Answer, json_data: dict, course_id, list_id, now_score) -> dict:
+    def do_question(self, answer: Answer, json_data: dict, course_id, list_id, now_score, task_id: int) -> dict:
         is_show = not settings.is_multiple_task
         Log.i(str(json_data["data"]["topic_done_num"])
               + "/" + str(json_data["data"]["topic_total"]) + ".", end='', is_show=is_show)
@@ -360,9 +359,9 @@ class MyselfTask(CDRTask):
                 json_data = CDRTask.skip_answer(json_data["data"]["topic_code"],
                                                 json_data["data"]["topic_mode"], "StudyTask")
             else:
-                json_data = CDRTask.find_answer_and_finish(answer, json_data["data"], 0)
+                json_data = self.find_answer_and_finish(answer, json_data["data"], 0, task_id)
         else:
-            json_data = CDRTask.find_answer_and_finish(answer, json_data["data"], 0)
+            json_data = self.find_answer_and_finish(answer, json_data["data"], 0, task_id)
         #   每10道题清理一次gc
         if json_data.get("data") is None:
             Log.e(json_data, is_show=False)

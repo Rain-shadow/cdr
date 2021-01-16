@@ -261,6 +261,7 @@ class Answer:
                     usages = content_list["usage"].get(remark)\
                              or adapter.usage_get_remark(content_list["usage"], remark)
                     if usages is not None:
+                        Log.d(usages)
                         for usage in usages:
                             # 修复长度判断，该bug由群友169***762提供
                             if len(usage_list) - 1 != len(usage_list_set & Set(usage))\
