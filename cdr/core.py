@@ -4,11 +4,12 @@
 # @Time  : 2020-12-19, 0019 15:32
 # @Author: 佚名
 # @File  : core.py
+import os
 import sys
 import time
 import cdr.request as requests
 from .login import Login
-from cdr.config import CDR_VERSION
+from cdr.config import CDR_VERSION, CONFIG_DIR_PATH
 from cdr.test import ClassTask, MyselfTask
 from cdr.utils import settings, Log, Tool
 
@@ -45,7 +46,7 @@ def do_homework():
             Log.v(f"\n{json['user_info']['student_name']}（未加入班级）\n")
         else:
             Log.v(f"\n{json['user_info']['student_name']}（{json['user_info']['class_name']}）\n")
-        Log.v("1.班级任务\n2.自选任务\n3.删除本地授权信息（可更换账号刷题）"
+        Log.v("1.班级任务\n2.自选任务\n3.删除本地授权信息（可更换账号刷题）\n4.打开配置文件（关闭后将自动重载配置文件，记得保存）"
               "\n\n#.加群1085739587免费获取最新版，更少的BUG、更高的准确率\n\n0.退出\n")
         settings.save()
         choose = input("请输入序号：")
@@ -66,6 +67,10 @@ def do_homework():
                                f"{Tool.time()}&versions={CDR_VERSION}", headers=settings.header)
             json = res.json()["data"]
             res.close()
+        elif choose == "4":
+            os.system(f'notepad {CONFIG_DIR_PATH + "config.txt"}')
+            settings.reload()
+            Tool.cls()
         elif choose == "0":
             sys.exit(0)
         else:

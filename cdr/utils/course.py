@@ -9,6 +9,7 @@ import re
 import os
 import threading
 import cdr.request as requests
+from cdr.exception import NoPermission
 from threading import Lock
 from .setting import _settings
 from .log import Log
@@ -65,9 +66,10 @@ class Course:
         del t_list
         m_array.clear()
         del m_array
-        self.is_success = True
-        for list_id in self._fail_list:
-            self._use_thread_load_word(course_id, list_id, is_second=True)
+        if len(self._fail_list) != 0:
+            self.is_success = True
+            for list_id in self._fail_list:
+                self._use_thread_load_word(course_id, list_id, is_second=True)
         if self.is_success:
             with open(DATA_DIR_PATH + self.id, mode='w', encoding='utf-8') as answer:
                 tem = {
@@ -95,7 +97,6 @@ class Course:
             return True
 
     def _use_thread_load_word(self, course_id: str, list_id: str, is_second: bool = False):
-        global _settings
         timeout = _settings.timeout
         base_url = "https://gateway.vocabgo.com/Teacher/Course/UnitWordList?config_id=-1&course_id={}&list_id={}"\
             .format(course_id, list_id)
@@ -107,7 +108,13 @@ class Course:
             answer = None
             try:
                 answer = self.get_detail_by_word(course_id, list_id, word)
-            except Exception as e:
+            except NoPermission:
+                Log.i(f"[{course_id}/{list_id}]疑似vip课程章节，无权访问，跳过该章节答案加载，本次不会缓存本地词库")
+                self.is_success = False
+                m_array_1.clear()
+                del m_array_1
+                return
+            except Exception:
                 if not is_second:
                     Log.w(f"警告！单词：{word}({course_id}/{list_id})加载失败，稍后软件将会尝试二次加载")
                 else:
@@ -153,7 +160,11 @@ class Course:
             params=data,
             headers=_settings.header,
             timeout=timeout)
-        data = res.json()["data"]
+
+        data = res.json()
+        if data["code"] == 0 and data["msg"] == "没有权限":
+            raise NoPermission(data["msg"])
+        data = data["data"]
         res.close()
         answer = {
             "content": [],
