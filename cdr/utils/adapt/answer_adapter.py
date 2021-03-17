@@ -38,7 +38,7 @@ class AnswerAdapter:
 
     # 无则返回[]
     def process_option_mean(self, mean: str) -> list:
-        result = []
+        result = [mean]
         for cls in self.__interfaces:
             result.extend(cls.process_option_mean(mean))
         return result

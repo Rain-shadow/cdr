@@ -244,14 +244,10 @@ class Answer:
         usage_list_set = Set(usage_list)
         Log.d(usage_list)
         remark_set = Set(adapter.process_option_mean(remark))
-        #   被弃用的正则表达式：
-        #   (?:noun|verb|prep|adj|adv|conj|pron|excl|PRON-POSS|QUANT)\s?(.*)
-        pattern = re.compile(r"(?:[A-Za-z-]*)?\s?(.*)")
         for key, value in self._course.data.items():
             if len(usage_list) == 1:
                 for i in value["content"]:
-                    matcher = pattern.match(i["mean"])
-                    if len(remark_set & Set([matcher.group(1)])) != 0:
+                    if len(remark_set & Set(adapter.process_word_mean(example["mean"])) != 0:
                         if skip_times != 0:
                             skip_times -= 1
                             continue
