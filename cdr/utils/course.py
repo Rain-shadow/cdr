@@ -20,7 +20,7 @@ _settings = _settings
 
 
 class Course:
-    DATA_VERSION = 6
+    DATA_VERSION = 7
 
     def __init__(self, course_id):
         is_show = not _settings.is_multiple_task
@@ -219,14 +219,13 @@ class Course:
                 if matcher is None:
                     print(j)
 
-                tem_list = matcher.group(1)
-                if usage_repeat_mean_pattern.match(tem_list):
-                    tem_list = usage_repeat_mean_pattern.match(tem_list).group(1)
-                tem_list.replace('{', '').replace('}', '') \
+                tem_list = matcher.group(1).replace('{', '').replace('}', '') \
                     .replace('.', ' ').replace("…", " ").replace("-", " ").replace(",", " ")
                 #   处理因清理"..."而造成的多余空格
                 tem_list = " ".join(tem_list.split()).split(" ")
                 tem_str = matcher.group(2).strip()
+                if usage_repeat_mean_pattern.fullmatch(tem_str) is not None:
+                    tem_str = usage_repeat_mean_pattern.match(tem_str).group(1)
                 #   因不同短语可能具有相同的翻译，需做额外处理
                 if answer["content"][i]["usage"].get(tem_str) is None:
                     answer["content"][i]["usage"][tem_str] = []
