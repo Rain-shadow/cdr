@@ -145,7 +145,7 @@ class Answer:
         option_set = Set(option_list)
         wrong_set = set()
 
-        for value in self._course.data.values():
+        for key, value in self._course.data.items():
             for content in value["content"]:
                 usage_list = content["usage"].get(remark) or adapter.usage_get_remark(content["usage"], remark)
                 if usage_list is not None:

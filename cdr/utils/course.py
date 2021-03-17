@@ -189,10 +189,11 @@ class Course:
             "assist": []
         }
         count = 0
+        pattern = re.compile(r"([0-9A-Za-z\.\s\(\)\{\}'/&‘’,（）…-]*)?\s(.*)")
         #  适配课程[QXB_3]中指定章节[QXB_3_3_A]单词[insecure]中某个短语引起的短语翻译匹配错误问题
         #  {insecure} factors 不稳定因素 不稳定因素
         #  该BUG由群友604***887提供的日志
-        pattern = re.compile(r"([0-9A-Za-z\.\s\(\)\{\}'/&‘’,（）…-]*)?\s((?:(?!\s).)*)(?:\s?\2)?")
+        usage_repeat_mean_pattern = re.compile(r"((?:(?!\s).)*)(?:\s?\1)?")
         is_more = re.compile(r"(.*…)\s(…[^a-zA-Z]*)")
         for i, o in enumerate(data["options"]):
             count = count + 1
@@ -218,7 +219,10 @@ class Course:
                 if matcher is None:
                     print(j)
 
-                tem_list = matcher.group(1).replace('{', '').replace('}', '') \
+                tem_list = matcher.group(1)
+                if usage_repeat_mean_pattern.match(tem_list):
+                    tem_list = usage_repeat_mean_pattern.match(tem_list).group(1)
+                tem_list.replace('{', '').replace('}', '') \
                     .replace('.', ' ').replace("…", " ").replace("-", " ").replace(",", " ")
                 #   处理因清理"..."而造成的多余空格
                 tem_list = " ".join(tem_list.split()).split(" ")
