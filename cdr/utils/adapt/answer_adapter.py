@@ -38,6 +38,8 @@ class AnswerAdapter:
 
     # 无则返回[]
     def process_option_mean(self, mean: str) -> list:
+        # 21.3.17修复由群友253***349提交的BUG
+        # 该BUG让我注意到设计适配器之初忘记将原本的翻译添加进列表中
         result = [mean]
         for cls in self.__interfaces:
             result.extend(cls.process_option_mean(mean))
@@ -45,7 +47,7 @@ class AnswerAdapter:
 
     # 无则返回[]
     def process_word_mean(self, mean: str) -> list:
-        result = []
+        result = [mean]
         for cls in self.__interfaces:
             result.extend(cls.process_word_mean(mean))
         return result

@@ -247,7 +247,7 @@ class Answer:
         for key, value in self._course.data.items():
             if len(usage_list) == 1:
                 for i in value["content"]:
-                    if len(remark_set & Set(adapter.process_word_mean(example["mean"])) != 0:
+                    if len(remark_set & Set(adapter.process_word_mean(i["mean"]))) != 0:
                         if skip_times != 0:
                             skip_times -= 1
                             continue
