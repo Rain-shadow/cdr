@@ -34,8 +34,10 @@ class Answer:
             for content in answer["content"]:
                 if content["example"].get(remark) or adapter.example_get_remark(content["example"], remark):
                     for mean in options:
-                        tem_list = [mean["content"]]
-                        tem_list.extend(adapter.process_option_mean(mean["content"]))
+                        tem_list = [adapter.process_option_mean(mean["content"])]
+                        # 21.3.17修复由群友转交给115***706提交的BUG，我们仍未知道那天是哪位群友的贡献
+                        if mean["content"].find("（") != -1:
+                            tem_list.extend(adapter.process_option_mean(re.sub(r"（.+）", "", mean["content"])))
                         # 若选项集合与题库集合的交集存在，则说明该选项等于题库中的某个选项
                         # 由 mean == content["mean"] 拓展适配得来
                         if len(Set(tem_list) & Set(adapter.process_word_mean(content["mean"]))) != 0:
@@ -100,8 +102,12 @@ class Answer:
         content = re.sub(r'\s\s', ' ', content)
         Log.d(content)
         Log.d(options)
+        content_list = dapter.process_option_mean(content)
+        # 21.3.17修复由群友转交给115***706提交的BUG，我们仍未知道那天是哪位群友的贡献
+        if content.find("（") != -1:
+            content_list.extend(adapter.process_option_mean(re.sub(r"（.+）", "", content)))
         # 感谢群友104***629提供的错误日志让我意识到了使用了错误的适配函数
-        content_set = Set(adapter.process_option_mean(content))
+        content_set = Set(content_list)
         for word in options:
             answer = self._course.find_detail_by_word(word["content"])
             Log.d(answer)
@@ -240,6 +246,12 @@ class Answer:
         Log.d("\nfind_answer_by_51")
         Log.d(content)
         Log.d(remark)
+        # 21.3.17修复由群友转交给115***706提交的BUG，我们仍未知道那天是哪位群友的贡献
+        # 这个就离谱了，把remark内容放到content中可还行？？？
+        if remark is None and content.find("\n") != -1:
+            tem_list = content.split("\n")
+            content = tem_list[0]
+            remark = tem_list[1]
         usage_list = adapter.process_option_usage(content).split(" ")
         usage_list_set = Set(usage_list)
         Log.d(usage_list)

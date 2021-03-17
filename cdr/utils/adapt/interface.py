@@ -149,7 +149,7 @@ class AnswerPattern3(IOrigin):
 
 # 21.3.17修复由群友253***349提交的BUG
 # 处理填空时根据单词翻译填单词，翻译中多出单词类型的问题
-class AnswerPattern3(IOrigin):
+class AnswerPattern4(IOrigin):
 
     @staticmethod
     def process_word_mean(mean: str) -> list:
