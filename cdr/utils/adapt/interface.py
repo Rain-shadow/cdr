@@ -145,3 +145,12 @@ class AnswerPattern3(IOrigin):
         # 去除多余的<>
         tem = re.sub(r"[<(（].*?[）)>]", "", mean)
         return [tem, Tool.sort_str(tem)]
+
+
+# 21.3.17修复由群友253***349提交的BUG
+# 处理填空时根据单词翻译填单词，翻译中多出单词类型的问题
+class AnswerPattern3(IOrigin):
+
+    @staticmethod
+    def process_word_mean(mean: str) -> list:
+        return [re.sub(r"(?:[A-Za-z-]*)?\s?", "", mean)]
