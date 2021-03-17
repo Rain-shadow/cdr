@@ -102,7 +102,7 @@ class Answer:
         content = re.sub(r'\s\s', ' ', content)
         Log.d(content)
         Log.d(options)
-        content_list = dapter.process_option_mean(content)
+        content_list = adapter.process_option_mean(content)
         # 21.3.17修复由群友转交给115***706提交的BUG，我们仍未知道那天是哪位群友的贡献
         if content.find("（") != -1:
             content_list.extend(adapter.process_option_mean(re.sub(r"（.+）", "", content)))
