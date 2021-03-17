@@ -20,7 +20,7 @@ _settings = _settings
 
 
 class Course:
-    DATA_VERSION = 5
+    DATA_VERSION = 6
 
     def __init__(self, course_id):
         is_show = not _settings.is_multiple_task
@@ -132,8 +132,25 @@ class Course:
             if self.data.get(word) is None:
                 self.data[word] = answer
             else:
-                self.data[word]["content"].extend(answer["content"])
+                # 废弃代码self.data[word]["content"].extend(answer["content"])
+                # 存在单词翻译相同情况，该BUG由群友104***748提供，若不处理，会让题型32的特殊情况出现问题
+                tem_map = {}
+                for index, item in enumerate(self.data[word]["content"]):
+                    tem_map[item["mean"]] = index
+                for item in answer["content"]:
+                    if tem_map.get(item["mean"]) is None:
+                        self.data[word]["content"].append(item)
+                    else:
+                        tem_data = self.data[word]["content"][tem_map[item["mean"]]]
+                        for key in item["usage"]:
+                            if tem_data["usage"].get(key) is None:
+                                tem_data["usage"][key] = item["usage"][key]
+                        for key in item["example"]:
+                            if tem_data["example"].get(key) is None:
+                                tem_data["example"][key] = item["example"][key]
+                del tem_map
                 self.data[word]["assist"].extend(answer["assist"])
+            self.data[word]["assist"] = list(set(self.data[word]["assist"]))
             self._lock.release()
         m_array_1.clear()
         del m_array_1
