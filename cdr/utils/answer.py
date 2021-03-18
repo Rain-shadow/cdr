@@ -34,7 +34,7 @@ class Answer:
             for content in answer["content"]:
                 if content["example"].get(remark) or adapter.example_get_remark(content["example"], remark):
                     for mean in options:
-                        tem_list = [adapter.process_option_mean(mean["content"])]
+                        tem_list = adapter.process_option_mean(mean["content"])
                         # 21.3.17修复由群友转交给115***706提交的BUG，我们仍未知道那天是哪位群友的贡献
                         if mean["content"].find("（") != -1:
                             tem_list.extend(adapter.process_option_mean(re.sub(r"（.+）", "", mean["content"])))
