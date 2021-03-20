@@ -168,17 +168,26 @@ class Course:
         return tem_list
 
     @staticmethod
-    def get_more_usage(usage: list):
+    def get_more_usage(usage: list, aim_word: str):
         compatible_word = [
             ["sth", "something"],
-            ["sb", "somebody"]
+            ["sb", "somebody"],
         ]
+        # 该转换为单向转换，由value[0] -> value[1]转换
+        compatible_word_map = {
+            # 什么？你说这两个毫无关联，我为什么要添加这两个？
+            # 哦宝贝，你为什么不去看看 【CET6 List 01】的单词【allure】其短语【失去魅力】是什么呢，它出的对应的题又是什么呢
+            "allure": ["lose", "loose"],
+        }
         tem_list = [usage]
         for word in usage:
             for cw in compatible_word:
                 if word in cw:
                     aim = cw[0] if cw.index(word) == 1 else cw[1]
-                    tem_list.append("#".join(cw).replace(word, aim).split("#"))
+                    tem_list.append("#".join(usage).replace(word, aim).split("#"))
+        for key, value in compatible_word_map.items():
+            if key == aim_word and value[0] in usage:
+                tem_list.append("#".join(usage).replace(value[0], value[1]).split("#"))
         return tem_list
 
     @staticmethod
@@ -245,7 +254,7 @@ class Course:
                 #   因不同短语可能具有相同的翻译，需做额外处理
                 if answer["content"][i]["usage"].get(tem_str) is None:
                     answer["content"][i]["usage"][tem_str] = []
-                answer["content"][i]["usage"][tem_str].extend(Course.get_more_usage(tem_list))
+                answer["content"][i]["usage"][tem_str].extend(Course.get_more_usage(tem_list, word))
             for j in content["example"]:
                 answer["content"][i]["example"][j["sen_mean_cn"]] = j["sen_content"]
                 tem_word = j["sen_content"][j["sen_content"].find("{") + 1:j["sen_content"].find("}")]
