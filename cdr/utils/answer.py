@@ -153,6 +153,7 @@ class Answer:
         option_list = []  # 存放选项中的短语，短语由规定顺序的单词数组构成
         for usage in options:
             content, _ = adapter.process_content_and_remark(usage["content"], None)
+            Log.d(content, is_show=False)
             option_list.extend(re.split(r"\s+", adapter.process_option_usage(content)))
         Log.d(option_list, is_show=False)
         option_set = Set(option_list)

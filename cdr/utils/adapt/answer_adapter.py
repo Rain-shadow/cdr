@@ -23,7 +23,7 @@ class AnswerAdapter:
         self.__interfaces = _interfaces
 
     # 无则原样返回
-    def process_content_and_remark(self, content: str, remark: str) -> (str, str):
+    def process_content_and_remark(self, content: str, remark: str):
         for cls in self.__interfaces:
             content, remark = cls.process_content_and_remark(content, remark)
         return content, remark

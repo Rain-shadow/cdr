@@ -13,8 +13,8 @@ class IOrigin:
 
     # 处理传入的content, remark混合问题
     @staticmethod
-    def process_content_and_remark(content: str, remark: str) -> (str, str):
-        pass
+    def process_content_and_remark(content: str, remark: str):
+        return content, remark
 
     # 处理不同情况下的翻译以从例句列表中得到对应的英语例句
     @staticmethod
@@ -44,7 +44,7 @@ class IOrigin:
     # 处理选项中短语翻译的特殊情况（如多出莫名其妙的符号）
     @staticmethod
     def process_option_usage(usage: str) -> str:
-        pass
+        return usage
 
     # 处理题型32中一个选项中包含多个单词的情况
     @staticmethod
@@ -70,7 +70,7 @@ class IOrigin:
 class AnswerPattern1(IOrigin):
 
     @staticmethod
-    def process_content_and_remark(content: str, remark: str) -> (str, str):
+    def process_content_and_remark(content: str, remark: str):
         # 21.3.17修复由群友转交给115***706提交的BUG，我们仍未知道那天是哪位群友的贡献
         # 这个就离谱了，把remark内容放到content中可还行？？？
         if remark is None and content.find("\n") != -1:
