@@ -22,6 +22,12 @@ class AnswerAdapter:
     def __init__(self):
         self.__interfaces = _interfaces
 
+    # 无则原样返回
+    def process_content_and_remark(self, content: str, remark: str) -> (str, str):
+        for cls in self.__interfaces:
+            content, remark = cls.process_content_and_remark(content, remark)
+        return content, remark
+
     # 无则返回None
     def example_get_remark(self, example_list: dict, remark: str) -> str:
         for cls in self.__interfaces:
@@ -62,11 +68,10 @@ class AnswerAdapter:
 
     # 无则返回usage
     def process_option_usage(self, usage: str) -> str:
+        result = usage
         for cls in self.__interfaces:
-            result = cls.process_option_usage(usage)
-            if result and result != usage:
-                return result
-        return usage
+            result = cls.process_option_usage(result)
+        return result
 
     # 无则返回None
     def answer_32_1(self, options: list, usage: list) -> str:

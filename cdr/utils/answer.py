@@ -146,7 +146,8 @@ class Answer:
         # 选项预处理
         option_list = []  # 存放选项中的短语，短语由规定顺序的单词数组构成
         for usage in options:
-            option_list.extend(re.split(r"\s+", adapter.process_option_usage(usage["content"])))
+            content, _ = adapter.process_content_and_remark(usage["content"], None)
+            option_list.extend(re.split(r"\s+", adapter.process_option_usage(content)))
         Log.d(option_list, is_show=False)
         option_set = Set(option_list)
         wrong_set = set()
@@ -246,12 +247,7 @@ class Answer:
         Log.d("\nfind_answer_by_51")
         Log.d(content)
         Log.d(remark)
-        # 21.3.17修复由群友转交给115***706提交的BUG，我们仍未知道那天是哪位群友的贡献
-        # 这个就离谱了，把remark内容放到content中可还行？？？
-        if remark is None and content.find("\n") != -1:
-            tem_list = content.split("\n")
-            content = tem_list[0]
-            remark = tem_list[1]
+        content, remark = adapter.process_content_and_remark(content, remark)
         usage_list = adapter.process_option_usage(content).split(" ")
         usage_list_set = Set(usage_list)
         Log.d(usage_list)

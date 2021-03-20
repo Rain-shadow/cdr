@@ -11,6 +11,11 @@ from ..tool import Tool
 # 接口基类
 class IOrigin:
 
+    # 处理传入的content, remark混合问题
+    @staticmethod
+    def process_content_and_remark(content: str, remark: str) -> (str, str):
+        pass
+
     # 处理不同情况下的翻译以从例句列表中得到对应的英语例句
     @staticmethod
     def example_get_remark(example_list: dict, remark: str) -> str:
@@ -63,6 +68,16 @@ class IOrigin:
 
 # 代码重构适配
 class AnswerPattern1(IOrigin):
+
+    @staticmethod
+    def process_content_and_remark(content: str, remark: str) -> (str, str):
+        # 21.3.17修复由群友转交给115***706提交的BUG，我们仍未知道那天是哪位群友的贡献
+        # 这个就离谱了，把remark内容放到content中可还行？？？
+        if remark is None and content.find("\n") != -1:
+            tem_list = content.split("\n")
+            content = tem_list[0]
+            remark = tem_list[1]
+        return content, remark
 
     @staticmethod
     def usage_get_remark(usage_list: dict, remark: str) -> list:
