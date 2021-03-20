@@ -20,7 +20,7 @@ _settings = _settings
 
 
 class Course:
-    DATA_VERSION = 7
+    DATA_VERSION = 8
 
     def __init__(self, course_id):
         is_show = not _settings.is_multiple_task
@@ -145,6 +145,8 @@ class Course:
                         for key in item["usage"]:
                             if tem_data["usage"].get(key) is None:
                                 tem_data["usage"][key] = item["usage"][key]
+                            else:
+                                tem_data["usage"][key].append(item["usage"][key])
                         for key in item["example"]:
                             if tem_data["example"].get(key) is None:
                                 tem_data["example"][key] = item["example"][key]
@@ -163,6 +165,20 @@ class Course:
         for key in self.data:
             if word in self.data[key]["assist"] or word.lower() in self.data[key]["assist"]:
                 tem_list.append(self.data[key])
+        return tem_list
+
+    @staticmethod
+    def get_more_usage(usage: list):
+        compatible_word = [
+            ["sth", "something"],
+            ["sb", "somebody"]
+        ]
+        tem_list = [usage]
+        for word in usage:
+            for cw in compatible_word:
+                if word in cw:
+                    aim = cw[0] if cw.index(word) == 1 else cw[1]
+                    tem_list.append("#".join(cw).replace(word, aim).split("#"))
         return tem_list
 
     @staticmethod
@@ -189,7 +205,7 @@ class Course:
             "assist": []
         }
         count = 0
-        pattern = re.compile(r"([0-9A-Za-z\.\s\(\)\{\}'/&‘’,（）…-]*)?\s(.*)")
+        pattern = re.compile(r"([0-9A-Za-z.\s(){}'/&‘’,（）…-]*)?\s(.*)")
         #  适配课程[QXB_3]中指定章节[QXB_3_3_A]单词[insecure]中某个短语引起的短语翻译匹配错误问题
         #  {insecure} factors 不稳定因素 不稳定因素
         #  该BUG由群友604***887提供的日志
@@ -215,7 +231,7 @@ class Course:
                 if is_more.match(j) is None:
                     matcher = pattern.match(j)
                 else:
-                    matcher = re.match(r"([0-9A-Za-z\.\s\(\)\{\}'/&‘’,（）…-]*)?\s(….*)", j)
+                    matcher = re.match(r"([0-9A-Za-z.\s(){}'/&‘’,（）…-]*)?\s(….*)", j)
                 if matcher is None:
                     print(j)
 
@@ -229,11 +245,10 @@ class Course:
                 #   因不同短语可能具有相同的翻译，需做额外处理
                 if answer["content"][i]["usage"].get(tem_str) is None:
                     answer["content"][i]["usage"][tem_str] = []
-                answer["content"][i]["usage"][tem_str].append(tem_list)
+                answer["content"][i]["usage"][tem_str].extend(Course.get_more_usage(tem_list))
             for j in content["example"]:
                 answer["content"][i]["example"][j["sen_mean_cn"]] = j["sen_content"]
                 tem_word = j["sen_content"][j["sen_content"].find("{") + 1:j["sen_content"].find("}")]
                 if tem_word not in answer["assist"]:
                     answer["assist"].append(tem_word)
         return answer
-
