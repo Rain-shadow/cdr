@@ -8,8 +8,11 @@
 
 class Set:
 
-    def __init__(self, value: list):
-        self.__value = value
+    def __init__(self, value):
+        if isinstance(value, list):
+            self.__value = value
+        else:
+            self.__value = list(value)
 
     def __and__(self, other):
         tem = []
