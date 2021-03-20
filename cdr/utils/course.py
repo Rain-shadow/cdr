@@ -180,11 +180,16 @@ class Course:
             "allure": ["lose", "loose"],
         }
         tem_list = [usage]
-        for word in usage:
-            for cw in compatible_word:
-                if word in cw:
-                    aim = cw[0] if cw.index(word) == 1 else cw[1]
-                    tem_list.append("#".join(usage).replace(word, aim).split("#"))
+        tem_str = "#".join(usage)
+        flag = False
+        for cw in compatible_word:
+            word_list = list(set(cw) & set(usage))
+            if len(word_list) != 0:
+                aim = cw[0] if cw.index(word_list[0]) == 1 else cw[1]
+                tem_str = tem_str.replace(word_list[0], aim)
+                flag = True
+        if flag:
+            tem_list.append(tem_str.split("#"))
         for key, value in compatible_word_map.items():
             if key == aim_word and value[0] in usage:
                 tem_list.append("#".join(usage).replace(value[0], value[1]).split("#"))
