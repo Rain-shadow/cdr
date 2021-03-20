@@ -8,6 +8,7 @@ import re
 from .course import Course
 from .log import Log
 from .set import Set
+from .tool import Tool
 from .adapt import adapter
 from cdr.exception import AnswerNotFoundException
 
@@ -53,6 +54,7 @@ class Answer:
     def find_answer_by_13(self, assist_word: str, remark: str, options: list) -> str:
         Log.d("\nfind_answer_by_13")
         Log.d(assist_word)
+        Log.d(remark)
         Log.d(options)
         answer_list = self._course.find_detail_by_assist_word(assist_word)
         Log.d(answer_list)
@@ -68,6 +70,10 @@ class Answer:
                             tem_list.append(content["example"][key])
                     for sentence in options:
                         if sentence["content"] in tem_list:
+                            Log.d(sentence["content"])
+                            return str(sentence["answer_tag"])
+                    for sentence in options:
+                        if Tool.is_str_in_list_by_some_difference(sentence["content"], tem_list):
                             Log.d(sentence["content"])
                             return str(sentence["answer_tag"])
         raise AnswerNotFoundException(13)
