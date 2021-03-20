@@ -4,12 +4,25 @@
 # @Time  : 2020-12-20, 0020 22:29
 # @Author: 佚名
 # @File  : tool.py
+import difflib
 import hashlib
 import os
 import time
 
 
 class Tool:
+
+    @staticmethod
+    def get_ratio_between_str(str_a: str, str_b: str) -> float:
+        return difflib.SequenceMatcher(None, str_a, str_b).quick_ratio()
+
+    @staticmethod
+    def is_str_in_list_by_some_difference(content: str, aim: list) -> bool:
+        ratio = 0.0
+        for item in aim:
+            tem = Tool.get_ratio_between_str(content, item)
+            ratio = ratio if tem < ratio else tem
+        return ratio >= 0.98
 
     # 答案匹配所需方法，无视可读性按字符大小排序
     @staticmethod
