@@ -14,6 +14,7 @@ from .cdr_task import CDRTask
 from cdr.utils import settings, Answer, Course, Log, Tool
 from cdr.thread import CustomThread
 from cdr.config import CDR_VERSION, CONFIG_DIR_PATH
+from cdr.exception import NoPermission
 
 
 class ClassTask(CDRTask):
@@ -137,7 +138,12 @@ class ClassTask(CDRTask):
                 res.close()
                 if task_type == 1:
                     #   判断是否需要选词
-                    if json_data["code"] == 20001 and ClassTask.choose_word(course_id, task_id, task_type):
+                    try:
+                        if json_data["code"] == 20001 and ClassTask.choose_word(course_id, task_id, task_type):
+                            break
+                    except NoPermission as e:
+                        Log.w(e)
+                        Log.w("疑似未开通VIP课程，请自行购买VIP课程或反馈至学校购买后再进行答题操作")
                         break
                     # 开始任务包
                     timestamp = Tool.time()
@@ -268,6 +274,8 @@ class ClassTask(CDRTask):
             headers=settings.header, timeout=time_out)
         json_data = res.json()
         res.close()
+        if json_data["code"] == 0 and json_data["msg"].find("开通权限") != -1:
+            raise NoPermission(json_data["msg"])
         word_map = {}
         for word in json_data['data']['word_list']:
             if word['score'] != 10:
