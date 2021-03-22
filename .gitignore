@@ -20,5 +20,6 @@ dist/*
 *.c
 *.zip
 test.py
+get_course_word.py
 setup.py
 main*.spec
