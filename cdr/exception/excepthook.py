@@ -8,6 +8,7 @@ import threading
 import sys
 from requests import ReadTimeout
 from requests.exceptions import ProxyError, ConnectionError
+from urllib3.exceptions import NewConnectionError, MaxRetryError
 
 from cdr.request.network_error import NetworkError
 from cdr.request.upper_limit_error import UpperLimitError
@@ -28,7 +29,8 @@ def __my_except_hook(exc_type, exc_value, tb):
 
     Log.v("")
     Log.e(msg, is_show=False)
-    if exc_type == ReadTimeout or exc_type == ProxyError or exc_type == ConnectionError or exc_type == ConnectionError:
+    if exc_type == ReadTimeout or exc_type == ProxyError or exc_type == ConnectionError or exc_type == ConnectionError \
+            or exc_type == NewConnectionError or exc_type == MaxRetryError:
         Log.e("网路不稳定，请待网路恢复后重启程序")
     elif exc_type == KeyboardInterrupt:
         Log.i("你主动中断了程序的运行")
