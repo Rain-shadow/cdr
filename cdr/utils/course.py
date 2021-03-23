@@ -20,7 +20,7 @@ _settings = _settings
 
 
 class Course:
-    DATA_VERSION = 8
+    DATA_VERSION = 9
 
     def __init__(self, course_id):
         is_show = not _settings.is_multiple_task
@@ -146,7 +146,7 @@ class Course:
                             if tem_data["usage"].get(key) is None:
                                 tem_data["usage"][key] = item["usage"][key]
                             else:
-                                tem_data["usage"][key].append(item["usage"][key])
+                                tem_data["usage"][key].extend(item["usage"][key])
                         for key in item["example"]:
                             if tem_data["example"].get(key) is None:
                                 tem_data["example"][key] = item["example"][key]
