@@ -147,6 +147,7 @@ class Answer:
     # blank_count 填空所需单词数量
     def find_answer_by_32(self, remark: str, options: list, blank_count: int, skip_times: int) -> str:
         Log.d("\nfind_answer_by_32")
+        Log.d(remark)
         Log.d(options)
         Log.d(f"{blank_count:d}")
         # 选项预处理

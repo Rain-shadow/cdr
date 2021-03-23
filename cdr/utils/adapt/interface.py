@@ -169,3 +169,19 @@ class AnswerPattern4(IOrigin):
     @staticmethod
     def process_word_mean(mean: str) -> list:
         return [re.sub(r"(?:[A-Za-z-]*)?\s?", "", mean)]
+
+
+# 21.3.23修复由群友839***272提交的BUG
+# 处理短语翻译多出符号问题
+class AnswerPattern5(IOrigin):
+
+    @staticmethod
+    def usage_get_remark(usage_list: dict, remark: str) -> list:
+        is_more = re.compile(r"(.*…)\s(…[^a-zA-Z]*)")
+        if is_more.match(remark) is None:
+            matcher = re.match(r"([0-9A-Za-z.\s(){}'/&‘’,（）…-]*)?\s(.*)", remark)
+        else:
+            matcher = re.match(r"([0-9A-Za-z.\s(){}'/&‘’,（）…-]*)?\s(….*)", remark)
+        if matcher is None:
+            return None
+        return usage_list.get(matcher.group(2).strip())
