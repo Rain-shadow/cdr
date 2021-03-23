@@ -6,6 +6,7 @@
 # @File  : main.py
 from cdr import do_homework, __version__ as cdr_version
 from cdr.exception import hook_except
+from cdr.utils import Log
 import ctypes
 import os
 import sys
@@ -23,5 +24,6 @@ if __name__ == '__main__':
     kernel32.SetConsoleMode(kernel32.GetStdHandle(-10), 128)
     os.system(f'title 词达人-v{cdr_version}')
     hook_except()
+    Log.i(f"词达人版本：{cdr_version}", is_show=False)
     do_homework()
     sys.exit(0)
