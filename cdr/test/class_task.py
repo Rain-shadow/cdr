@@ -284,7 +284,7 @@ class ClassTask(CDRTask):
                     word_map[tem_str] = []
                 word_map[tem_str].append(word['word'])
         if len(word_map) == 0:
-            Log.i("当前学习任务以完成", is_show=is_show)
+            Log.i("当前学习任务已完成", is_show=is_show)
             return True
         Log.i(word_map, is_show=False)
         tem_i = 0
