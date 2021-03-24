@@ -20,7 +20,7 @@ _settings = _settings
 
 
 class Course:
-    DATA_VERSION = 9
+    DATA_VERSION = 10
 
     def __init__(self, course_id):
         is_show = not _settings.is_multiple_task
@@ -178,6 +178,7 @@ class Course:
             # 什么？你说这两个毫无关联，我为什么要添加这两个？
             # 哦宝贝，你为什么不去看看 【CET6 List 01】的单词【allure】其短语【失去魅力】是什么呢，它出的对应的题又是什么呢
             "allure": ["lose", "loose"],
+            "immigrant": ["illegal", "illigal"],    # 由群友839***272提交的错误日志得到
         }
         tem_list = [usage]
         tem_str = "#".join(usage)
