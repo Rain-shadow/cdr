@@ -112,6 +112,6 @@ class Login:
         qr.add_data(login_url)
         qr.make(fit=True)
         img = qr.make_image()
-        Log.i("二维码以生成，将自动展示，请使用微信扫一扫进行词达人授权。成功后请关闭图片查看程序，若失败，用户可在“main目录\\config目录”下找到“授权二维码.jpg”")
+        Log.i("二维码已生成，将自动展示，请使用微信扫一扫进行词达人授权。成功后请关闭图片查看程序，若失败，用户可在“main目录\\config目录”下找到“授权二维码.jpg”")
         img.save(f"{CONFIG_DIR_PATH}授权二维码.jpg")
         img.show()  # 显示图片
