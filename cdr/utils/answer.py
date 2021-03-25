@@ -36,9 +36,6 @@ class Answer:
                 if content["example"].get(remark) or adapter.example_get_remark(content["example"], remark):
                     for mean in options:
                         tem_list = adapter.process_option_mean(mean["content"])
-                        # 21.3.17修复由群友转交给115***706提交的BUG，我们仍未知道那天是哪位群友的贡献
-                        if mean["content"].find("（") != -1:
-                            tem_list.extend(adapter.process_option_mean(re.sub(r"（.+）", "", mean["content"])))
                         # 若选项集合与题库集合的交集存在，则说明该选项等于题库中的某个选项
                         # 由 mean == content["mean"] 拓展适配得来
                         if len(Set(tem_list) & Set(adapter.process_word_mean(content["mean"]))) != 0:

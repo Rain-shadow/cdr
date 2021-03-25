@@ -185,3 +185,15 @@ class AnswerPattern5(IOrigin):
         if matcher is None:
             return None
         return usage_list.get(matcher.group(2).strip())
+
+
+# 21.3.25修复由群友224***087提交的BUG
+# 这是他在看着电视没事干时试出来的
+# 处理选项中多余的中文括号
+class AnswerPattern6(IOrigin):
+
+    @staticmethod
+    def process_option_mean(mean: str) -> list:
+        # 去除多余的中文括号
+        tem = re.sub(r"([A-Za-z\s]+)?(（?(?:(?!（).)+）)", r"\1", mean)
+        return [tem, Tool.sort_str(tem)]
