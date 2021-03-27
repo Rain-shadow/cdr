@@ -12,10 +12,12 @@ from .login import Login
 from cdr.config import CDR_VERSION, CONFIG_DIR_PATH
 from cdr.test import ClassTask, MyselfTask
 from cdr.utils import settings, Log, Tool
+from cdr.url import URL
 
 
 def do_homework():
     Login()
+    URL.load_main()
     #   模拟加载流程
     requests.options("https://app.vocabgo.com/student/", headers=settings.header).close()
     res = requests.get("https://gateway.vocabgo.com/Student/Main?timestamp="
@@ -56,6 +58,7 @@ def do_homework():
             Tool.cls()
         elif choose == "2":
             Log.i("正在加载任务列表中，请稍等......")
+            URL.load_myself_task_list()
             MyselfTask(json['user_info']['course_id']).run()
             Tool.cls()
         elif choose == "3":

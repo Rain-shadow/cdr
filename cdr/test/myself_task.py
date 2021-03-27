@@ -9,10 +9,11 @@ import gc
 import time
 import cdr.request as requests
 
+from cdr.config import CDR_VERSION, CONFIG_DIR_PATH
 from cdr.thread import CustomThread
 from .cdr_task import CDRTask
 from cdr.utils import settings, Answer, Course, Log, Tool
-from cdr.config import CDR_VERSION, CONFIG_DIR_PATH
+from cdr.url import URL
 
 
 class MyselfTask(CDRTask):
@@ -79,6 +80,7 @@ class MyselfTask(CDRTask):
         input("按回车键返回上一级")
 
     def do_task(self, task: dict, course_id: str, course: Course):
+        URL.load_task_detail()
         time_out = settings.timeout
         is_random_score = settings.is_random_score
         is_show = not settings.is_multiple_task
@@ -231,6 +233,7 @@ class MyselfTask(CDRTask):
 
     @staticmethod
     def choose_word(task: dict, task_id: int, grade: int) -> bool:
+        URL.load_choose_word()
         is_show = not settings.is_multiple_task
         time_out = settings.timeout
         Log.i("需要选词", is_show=is_show)

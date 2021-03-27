@@ -31,7 +31,7 @@ def __my_except_hook(exc_type, exc_value, tb):
     Log.e(msg, is_show=False)
     if exc_type == ReadTimeout or exc_type == ProxyError or exc_type == ConnectionError or exc_type == ConnectionError \
             or exc_type == NewConnectionError or exc_type == MaxRetryError:
-        Log.e("网路不稳定，请待网路恢复后重启程序")
+        Log.e("网络不稳定，请待网路恢复后重启程序")
     elif exc_type == KeyboardInterrupt:
         Log.i("你主动中断了程序的运行")
     elif exc_type == NetworkError:

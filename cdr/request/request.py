@@ -24,7 +24,7 @@ __s.adapters.DEFAULT_RETRIES = 15
 
 
 def __judge_code(res: requests.models.Response) -> requests.models.Response:
-    Log.i(res.content.decode("utf-8"), is_show=False)
+    Log.i(res.content, is_show=False)
     if res.status_code != 200:
         if res.url != "https://app.vocabgo.com/student/":
             raise NetworkError(res.status_code, res.url, res.content.decode("utf-8"))
