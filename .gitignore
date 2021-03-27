@@ -15,6 +15,7 @@ dist/*
 *.pyd
 *.pyc
 *.txt
+!requirements.txt
 *.ico
 *.bat
 *.c
