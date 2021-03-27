@@ -136,6 +136,13 @@ class ClassTask(CDRTask):
                                    headers=settings.header, params=data, timeout=time_out)
                 json_data = res.json()
                 res.close()
+                if json_data["code"] == 21006:
+                    self.verify_human(task_id)
+                    data["timestamp"] = Tool.time()
+                    res = requests.get(url='https://gateway.vocabgo.com/Student/ClassTask/StartAnswer',
+                                       headers=settings.header, params=data, timeout=time_out)
+                    json_data = res.json()
+                    res.close()
                 if task_type == 1:
                     #   判断是否需要选词
                     try:
