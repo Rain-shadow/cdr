@@ -145,13 +145,21 @@ class CDRTask:
         res = requests.post(
             url='https://gateway.vocabgo.com/Student/' + type_mode[type_id] + '/SubmitAnswerAndSave',
             json=data, headers=settings.header, timeout=settings.timeout)
-        json = res.json()
+        json_data = res.json()
         res.close()
+        if json_data["code"] == 21006:
+            self.verify_human(task_id)
+            data["timestamp"] = Tool.time()
+            res = requests.post(
+                url='https://gateway.vocabgo.com/Student/' + type_mode[type_id] + '/SubmitAnswerAndSave',
+                json=data, headers=settings.header, timeout=settings.timeout)
+            json_data = res.json()
+            res.close()
         #  请求模拟
         # requests.post(
         #     url='https://gateway.vocabgo.com/Student/Course/GetStudyWordInfo',
         #     json=data, headers=settings.header, timeout=settings.timeout).close()
-        return json
+        return json_data
 
     @staticmethod
     def task_find_answer(answer: Answer, topic_mode: int, content, remark, options: list, skip_times):
