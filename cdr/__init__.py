@@ -5,6 +5,6 @@
 #@File  : __init__.py.py
 from .login import Login
 from .core import do_homework
-__version__ = '1.9.17'
+__version__ = '1.9-finally'
 __author__ = 'Fuck CDR!'
 __all__ = ["Login", "do_homework", "__version__"]
