@@ -4,13 +4,12 @@
 # @Time  : 2020-12-19, 0019 21:18
 # @Author: 佚名
 # @File  : course.py
+import asyncio
 import json
 import re
 import os
-import threading
-import cdr.request as requests
+import cdr.aiorequset as requests
 from cdr.exception import NoPermission
-from threading import Lock
 from .setting import _settings
 from .log import Log
 from .tool import Tool
@@ -43,37 +42,40 @@ class Course:
             "Referer": "https://app.vocabgo.com/overall/",
             "TE": "Trailers"
         }
-        self._lock = Lock()
         self.is_success = True
+        self._fail_list = []
+
+    async def load_word(self):
+        is_show = not _settings.is_multiple_task
         #   获取课程所有列表
-        res = requests.get("https://gateway.vocabgo.com/Teacher/Course/UnitList?course_id={}&timestamp={}&versions={}"
-                           .format(course_id, Tool.time(), CDR_VERSION),
-                           headers=self._headers, timeout=_settings.timeout)
-        m_array = res.json()["data"]["course_list_info_list"]
+        data = {
+            "course_id": self.id,
+            "timestamp": Tool.time(),
+            "versions": CDR_VERSION
+        }
+        res = await requests.get("https://gateway.vocabgo.com/Teacher/Course/UnitList",
+                                 params=data, headers=self._headers, timeout=_settings.timeout)
+        json_data = (await res.json())["data"]["course_list_info_list"]
         res.close()
         t_list = []
-        self._fail_list = []
-        for m_list in m_array:
+        loop = Tool.new_event_loop()
+        for m_list in json_data:
             #   根据课程id及列表id获取所有单词
-            #   多线程加载单词，否则时间过长
-            thread = threading.Thread(target=self._use_thread_load_word, args=(course_id, m_list["list_id"]))
-            thread.setDaemon(True)
-            thread.start()
-            t_list.append(thread)
-        for thread in t_list:
-            thread.join()
+            t_list.append(self._use_thread_load_word(m_list["list_id"]))
+        loop.run_until_complete(asyncio.wait(t_list))
         t_list.clear()
         del t_list
-        m_array.clear()
-        del m_array
+        json_data.clear()
+        del json_data
         if len(self._fail_list) != 0:
             self.is_success = True
             for list_id in self._fail_list:
-                self._use_thread_load_word(course_id, list_id, is_second=True)
+                #TODO 为何是以整个章节重新加载？以单词加载才更合理吧？！
+                self._use_thread_load_word(list_id, is_second=True)
         if self.is_success:
             with open(DATA_DIR_PATH + self.id, mode='w', encoding='utf-8') as answer:
                 tem = {
-                    "courseId": course_id,
+                    "courseId": self.id,
                     "data": self.data,
                     "version": Course.DATA_VERSION
                 }
@@ -97,13 +99,15 @@ class Course:
             self.data = data["data"]
             return True
 
-    def _use_thread_load_word(self, course_id: str, list_id: str, is_second: bool = False):
+    async def _use_thread_load_word(self, list_id: str, is_second: bool = False):
+        course_id = self.id
         timeout = _settings.timeout
         base_url = "https://gateway.vocabgo.com/Teacher/Course/UnitWordList?config_id=-1&course_id={}&list_id={}"\
             .format(course_id, list_id)
-        res = requests.get(f"{base_url}&timestamp={Tool.time()}&versions={CDR_VERSION}",
+        res = await requests.get(f"{base_url}&timestamp={Tool.time()}&versions={CDR_VERSION}",
                            headers=self._headers, timeout=timeout)
-        m_array_1 = res.json()["data"]["word_list"]
+        m_array_1 = await res.json()
+        m_array_1 = m_array_1["data"]["word_list"]
         res.close()
         for word in m_array_1:
             answer = None

@@ -39,7 +39,7 @@ def __judge_code(res: requests.models.Response) -> requests.models.Response:
                                   or json_data["code"] == 21006):
                     Log.e(f"{json_data['code']}, {res.url}, {json_data['msg']}", is_show=False)
                 if json_data and json_data["code"] == 10017:
-                    raise UpperLimitError(res.status_code, res.url, res.json()["msg"])
+                    raise UpperLimitError(res.status_code, res.url, json_data["msg"])
     return res
 
 

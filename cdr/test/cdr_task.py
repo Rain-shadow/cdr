@@ -4,6 +4,7 @@
 # @Time  : 2020-12-25, 0025 10:10
 # @Author: 佚名
 # @File  : cdr_task.py
+import asyncio
 import sys
 import random
 import time
@@ -43,10 +44,10 @@ class CDRTask:
     def run(self):
         pass
 
-    def do_task(self, task: dict, course_id: str, course: Course):
+    async def do_task(self, task: dict, course_id: str, course: Course):
         pass
 
-    def course_pretreatment(self, course: set) -> dict:
+    async def course_pretreatment(self, course: set) -> dict:
         Log.i("已开启多任务答题，预加载任务所需题库中......")
         self.__line_progress = LineProgress(total=len(course), width=50, title="题库加载进度")
         self.__line_progress.update(0)
@@ -61,7 +62,7 @@ class CDRTask:
             thread.join()
         return self.__course_map
 
-    def __load_course(self, course_id: str):
+    async def __load_course(self, course_id: str):
         self.__course_map[course_id] = Course(course_id)
         self._lock.acquire()
         self.__progress_count += 1
