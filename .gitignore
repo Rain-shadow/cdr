@@ -12,13 +12,10 @@ config/*
 data/*
 log/*
 dist/*
-*.pyd
-*.pyc
 *.txt
 !requirements.txt
 *.ico
 *.bat
-*.c
 *.zip
 test.py
 get_course_word.py

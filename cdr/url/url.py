@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+# cython : language_level=3
+# @Author: 佚名
+# @File  : url.py
 import cdr.request as requests
 
 resource = {
