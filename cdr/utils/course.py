@@ -16,6 +16,7 @@ from .tool import Tool
 from cdr.config import CDR_VERSION, DATA_DIR_PATH
 
 _settings = _settings
+_logger = Log.get_logger()
 
 
 class Course:
@@ -27,7 +28,7 @@ class Course:
         self.data = {}
         if self._load_local_answer():
             return
-        Log.i("从网络装载题库中......(10s-30s)", is_show=is_show)
+        _logger.i("从网络装载题库中......(10s-30s)", is_show=is_show)
         self._headers = {
             "Host": "gateway.vocabgo.com",
             "Accept": "application/json, text/plain, */*",
@@ -43,7 +44,7 @@ class Course:
             "TE": "Trailers"
         }
         self.is_success = True
-        self._fail_list = []
+        self._fail_list = {}
 
     async def load_word(self):
         is_show = not _settings.is_multiple_task
@@ -57,21 +58,29 @@ class Course:
                                  params=data, headers=self._headers, timeout=_settings.timeout)
         json_data = (await res.json())["data"]["course_list_info_list"]
         res.close()
-        t_list = []
-        loop = Tool.new_event_loop()
+        chapter_words = {}
+        task_list = []
         for m_list in json_data:
             #   根据课程id及列表id获取所有单词
-            t_list.append(self._use_thread_load_word(m_list["list_id"]))
-        loop.run_until_complete(asyncio.wait(t_list))
-        t_list.clear()
-        del t_list
-        json_data.clear()
-        del json_data
-        if len(self._fail_list) != 0:
+            task_list.append(self._get_course_chapter_word_list(m_list["list_id"]))
+        results: list = await asyncio.gather(*task_list)
+        for list_id, words in results:
+            chapter_words[list_id] = words
+        task_list.clear()
+        for list_id, words in chapter_words.items():
+            for word in words:
+                task_list.append(self._get_word_info_and_dispose(list_id, word))
+        await asyncio.gather(*task_list)
+        #TODO
+        if self._fail_list:
             self.is_success = True
-            for list_id in self._fail_list:
-                #TODO 为何是以整个章节重新加载？以单词加载才更合理吧？！
-                self._use_thread_load_word(list_id, is_second=True)
+            for list_id, words in results:
+                chapter_words[list_id] = words
+            task_list.clear()
+            for list_id, words in chapter_words.items():
+                for word in words:
+                    task_list.append(self._get_word_info_and_dispose(list_id, word))
+            await asyncio.gather(*task_list)
         if self.is_success:
             with open(DATA_DIR_PATH + self.id, mode='w', encoding='utf-8') as answer:
                 tem = {
@@ -81,10 +90,10 @@ class Course:
                 }
                 answer.write(json.dumps(tem))
                 answer.close()
-            Log.i("本次题库已成功保存", is_show=is_show)
+            _logger.i("本次题库已成功保存", is_show=is_show)
         else:
-            Log.i("有单词未能成功加载，这会导致答案匹配率下降且本次不会保存题库", is_show=is_show)
-            Log.i("你可以等待网络通畅后继续答题", is_show=is_show)
+            _logger.i("有单词未能成功加载，这会导致答案匹配率下降且本次不会保存题库", is_show=is_show)
+            _logger.i("你可以等待网络通畅后继续答题", is_show=is_show)
 
     def _load_local_answer(self) -> bool:
         if not os.path.exists(DATA_DIR_PATH + self.id):
@@ -93,73 +102,73 @@ class Course:
             data = json.loads(answer.read())
             answer.close()
             if data["version"] < Course.DATA_VERSION:
-                Log.i("本地题库版本低于软件指定词库版本，稍后将重新从网络加载题库")
+                _logger.i("本地题库版本低于软件指定词库版本，稍后将重新从网络加载题库")
                 return False
-            Log.i("复用上次本地缓存题库")
+            _logger.i("复用上次本地缓存题库")
             self.data = data["data"]
             return True
 
-    async def _use_thread_load_word(self, list_id: str, is_second: bool = False):
+    async def _get_course_chapter_word_list(self, list_id: str):
         course_id = self.id
         timeout = _settings.timeout
-        base_url = "https://gateway.vocabgo.com/Teacher/Course/UnitWordList?config_id=-1&course_id={}&list_id={}"\
-            .format(course_id, list_id)
-        res = await requests.get(f"{base_url}&timestamp={Tool.time()}&versions={CDR_VERSION}",
-                           headers=self._headers, timeout=timeout)
-        m_array_1 = await res.json()
-        m_array_1 = m_array_1["data"]["word_list"]
+        data = {
+            "config_id": -1,
+            "course_id": course_id,
+            "list_id": list_id,
+            "timestamp": Tool.time(),
+            "versions": CDR_VERSION
+        }
+        res = await requests.get("https://gateway.vocabgo.com/Teacher/Course/UnitWordList",
+                                 headers=self._headers, params=data, timeout=timeout)
+        word_list = (await res.json())["data"]["word_list"]
         res.close()
-        for word in m_array_1:
-            answer = None
-            try:
-                answer = self.get_detail_by_word(course_id, list_id, word)
-            except NoPermission:
-                Log.i(f"[{course_id}/{list_id}]疑似vip课程章节，无权访问，跳过该章节答案加载，本次不会缓存本地词库")
-                self.is_success = False
-                m_array_1.clear()
-                del m_array_1
-                return
-            except Exception:
-                if not is_second:
-                    Log.w(f"警告！单词：{word}({course_id}/{list_id})加载失败，稍后软件将会尝试二次加载")
+        return list_id, word_list
+
+    async def _get_word_info_and_dispose(self, list_id: str, word: str, is_second: bool = False):
+        answer = None
+        try:
+            answer = await self.get_detail_by_word(self.id, list_id, word)
+        except NoPermission:
+            _logger.i(f"[{self.id}/{list_id}]疑似vip课程章节，无权访问，跳过该章节答案加载，本次不会缓存本地词库")
+            self.is_success = False
+            return
+        except Exception:
+            if not is_second:
+                _logger.w(f"警告！单词：{word}({self.id}/{list_id})加载失败，稍后软件将会尝试二次加载")
+            else:
+                _logger.w(f"警告！单词：{word}({self.id}/{list_id})二次加载失败，本次不会缓存本地词库")
+            self.is_success = False
+            if self._fail_list.get(list_id) is None:
+                self._fail_list[list_id] = [word]
+            else:
+                self._fail_list[list_id].append(word)
+        else:
+            if is_second:
+                _logger.d(f"单词：{word}二次加载成功！")
+        if self.data.get(word) is None:
+            self.data[word] = answer
+        else:
+            # 废弃代码self.data[word]["content"].extend(answer["content"])
+            # 存在单词翻译相同情况，该BUG由群友104***748提供，若不处理，会让题型32的特殊情况出现问题
+            tem_map = {}
+            for index, item in enumerate(self.data[word]["content"]):
+                tem_map[item["mean"]] = index
+            for item in answer["content"]:
+                if tem_map.get(item["mean"]) is None:
+                    self.data[word]["content"].append(item)
                 else:
-                    Log.w(f"警告！单词：{word}({course_id}/{list_id})二次加载失败，本次不会缓存本地词库")
-                self.is_success = False
-                self._lock.acquire()
-                self._fail_list.append(list_id)
-                self._lock.release()
-                continue
-            else:
-                if is_second:
-                    Log.d(f"单词：{word}二次加载成功！")
-            self._lock.acquire()
-            if self.data.get(word) is None:
-                self.data[word] = answer
-            else:
-                # 废弃代码self.data[word]["content"].extend(answer["content"])
-                # 存在单词翻译相同情况，该BUG由群友104***748提供，若不处理，会让题型32的特殊情况出现问题
-                tem_map = {}
-                for index, item in enumerate(self.data[word]["content"]):
-                    tem_map[item["mean"]] = index
-                for item in answer["content"]:
-                    if tem_map.get(item["mean"]) is None:
-                        self.data[word]["content"].append(item)
-                    else:
-                        tem_data = self.data[word]["content"][tem_map[item["mean"]]]
-                        for key in item["usage"]:
-                            if tem_data["usage"].get(key) is None:
-                                tem_data["usage"][key] = item["usage"][key]
-                            else:
-                                tem_data["usage"][key].extend(item["usage"][key])
-                        for key in item["example"]:
-                            if tem_data["example"].get(key) is None:
-                                tem_data["example"][key] = item["example"][key]
-                del tem_map
-                self.data[word]["assist"].extend(answer["assist"])
-            self.data[word]["assist"] = list(set(self.data[word]["assist"]))
-            self._lock.release()
-        m_array_1.clear()
-        del m_array_1
+                    tem_data = self.data[word]["content"][tem_map[item["mean"]]]
+                    for key in item["usage"]:
+                        if tem_data["usage"].get(key) is None:
+                            tem_data["usage"][key] = item["usage"][key]
+                        else:
+                            tem_data["usage"][key].extend(item["usage"][key])
+                    for key in item["example"]:
+                        if tem_data["example"].get(key) is None:
+                            tem_data["example"][key] = item["example"][key]
+            del tem_map
+            self.data[word]["assist"].extend(answer["assist"])
+        self.data[word]["assist"] = list(set(self.data[word]["assist"]))
 
     def find_detail_by_word(self, word):
         return self.data.get(word) or self.data.get(word.lower())
@@ -201,20 +210,20 @@ class Course:
         return tem_list
 
     @staticmethod
-    def get_detail_by_word(course_id, list_id, word):
+    async def get_detail_by_word(course_id, list_id, word):
         timeout = _settings.timeout
         data = {
             "course_id": course_id,
             "list_id": list_id,
             "word": word
          }
-        res = requests.get(
+        res = await requests.get(
             url='https://gateway.vocabgo.com/Student/Course/StudyWordInfo',
             params=data,
             headers=_settings.header,
             timeout=timeout)
 
-        data = res.json()
+        data = await res.json()
         if data["code"] == 0 and data["msg"] == "没有权限":
             raise NoPermission(data["msg"])
         data = data["data"]
