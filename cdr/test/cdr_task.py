@@ -17,6 +17,9 @@ from cdr.eprogress import LineProgress, MultiProgressManager
 from cdr.config import CDR_VERSION, CONFIG_DIR_PATH, LOG_DIR_PATH
 
 
+_logger = Log.get_logger()
+
+
 class CDRTask:
 
     def __init__(self):
@@ -26,6 +29,7 @@ class CDRTask:
         self._lock = Lock()
         self.__course_map = {}
         self._thread_count = 0
+        self._courses_set = set()
 
     def add_progress(self, key: str, title: str, total: int):
         tail = "%"
@@ -36,38 +40,38 @@ class CDRTask:
 
     def update_progress(self, key: str, progress: float, data: dict = None):
         self._progress.update(key, progress, data)
-        Log.i(f"Key: {key}, Progress: {progress}", is_show=False)
+        _logger.i(f"Key: {key}, Progress: {progress}", is_show=False)
 
     def finish_progress(self, key: str, msg):
         self._progress.finish(key, msg)
 
-    def run(self):
+    async def run(self):
         pass
+
+    @staticmethod
+    async def task_list(queue: asyncio.queues):
+        while True:
+            # wait for an item from the producer
+            item = await queue.get()
+            # process the item
+            print('consuming {}...'.format(item))
+            # simulate i/o operation using sleep
+            await asyncio.sleep(random.random())
+            # Notify the queue that the item has been processed
+            queue.task_done()
 
     async def do_task(self, task: dict, course_id: str, course: Course):
         pass
 
-    async def course_pretreatment(self, course: set) -> dict:
-        Log.i("已开启多任务答题，预加载任务所需题库中......")
-        self.__line_progress = LineProgress(total=len(course), width=50, title="题库加载进度")
-        self.__line_progress.update(0)
-        t_list = []
+    async def course_pretreatment(self) -> dict:
+        _logger.i("已开启多任务答题，预加载任务所需题库中......")
         self.__course_map = {}
-        for course_id in course:
-            thread = threading.Thread(target=self.__load_course, args=(course_id,))
-            thread.setDaemon(True)
-            thread.start()
-            t_list.append(thread)
-        for thread in t_list:
-            thread.join()
+        task_list = []
+        for course_id in self._courses_set:
+            self.__course_map[course_id] = Course(course_id)
+            task_list.append(self.__course_map[course_id].load_word())
+        await asyncio.gather(*task_list)
         return self.__course_map
-
-    async def __load_course(self, course_id: str):
-        self.__course_map[course_id] = Course(course_id)
-        self._lock.acquire()
-        self.__progress_count += 1
-        self._lock.release()
-        self.__line_progress.update(self.__progress_count)
 
     @property
     def thread_count(self):
@@ -86,9 +90,9 @@ class CDRTask:
         remark = data["stem"]["remark"]
         topic_mode = data["topic_mode"]
         if topic_mode == 31:
-            Log.v(f"[mode:{topic_mode}]{str(content)}", end='', is_show=is_show)
+            _logger.v(f"[mode:{topic_mode}]{str(content)}", end='', is_show=is_show)
         else:
-            Log.v(f"[mode:{topic_mode}]{content}({remark})", end='', is_show=is_show)
+            _logger.v(f"[mode:{topic_mode}]{content}({remark})", end='', is_show=is_show)
         topic_code = data["topic_code"]
         options = data["options"]
         time_spent = CDRTask.get_random_time(topic_mode, min_time=settings.min_random_time,
@@ -119,20 +123,20 @@ class CDRTask:
                 topic_code = e.topic_code
                 if e.has_chance:
                     skip_times += 1
-                    Log.w(e, is_show=False)
-                    Log.w(f"第{skip_times}次查询答案出错，尝试跳过原答案进行搜索", is_show=False)
+                    _logger.w(e, is_show=False)
+                    _logger.w(f"第{skip_times}次查询答案出错，尝试跳过原答案进行搜索", is_show=False)
                     continue
-                Log.v("")
-                Log.w("答案错误！")
-                Log.w(e)
-                Log.w("请携带error-last.txt寻找GM排除适配问题")
-                Log.w(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt")
-                Log.create_error_txt()
+                _logger.v("")
+                _logger.w("答案错误！")
+                _logger.w(e)
+                _logger.w("请携带error-last.txt寻找GM排除适配问题")
+                _logger.w(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt")
+                _logger.create_error_txt()
                 input("等待错误检查（按下回车键即可继续执行）")
                 return CDRTask.skip_answer(topic_code, topic_mode, type_mode[type_id])
             else:
                 has_chance = False
-                Log.v("   Done！", is_show=is_show)
+                _logger.v("   Done！", is_show=is_show)
         timestamp = Tool.time()
         sign = Tool.md5(f"time_spent={time_spent}&timestamp={timestamp}&topic_code={topic_code}"
                         + f"&versions={CDR_VERSION}ajfajfamsnfaflfasakljdlalkflak")
@@ -185,12 +189,12 @@ class CDRTask:
             elif topic_mode == 53 or topic_mode == 54:
                 answer_id = answer.find_answer_by_53(content, remark)
             else:
-                Log.w(f"未知题型：{topic_mode}")
-                Log.create_error_txt()
+                _logger.w(f"未知题型：{topic_mode}")
+                _logger.create_error_txt()
                 input("等待错误检查（按下回车键键即可继续执行）")
         except AnswerNotFoundException as e:
-            Log.v("")
-            Log.w(f"{e}")
+            _logger.v("")
+            _logger.w(f"{e}")
             CDRTask.wait_admin_choose()
             is_skip = True
         return answer_id, is_skip
@@ -255,14 +259,14 @@ class CDRTask:
             json_data = res.json()
             res.close()
         if json_data['code'] == 10017:
-            Log.w(f"\n{json_data['msg']}")
-            Log.w("该限制为词达人官方行为，与作者无关\n按回车退出程序")
+            _logger.w(f"\n{json_data['msg']}")
+            _logger.w("该限制为词达人官方行为，与作者无关\n按回车退出程序")
             input()
             sys.exit(0)
         if json_data['data']["answer_result"] == 1:
             pass
         else:
-            Log.w(json_data, is_show=False)
+            _logger.w(json_data, is_show=False)
             raise AnswerWrong(data, json_data['data']['topic_code'], json_data['data']["over_status"] != 1)
         return json_data['data']['topic_code'], json_data['data']["over_status"] != 1
 
@@ -282,13 +286,13 @@ class CDRTask:
             if json_data["code"] == 0 and json_data["msg"] == "无需验证":
                 return
             elif json_data["code"] == 0:
-                Log.w(json_data["msg"])
-                Log.w("词达人验证服务器暂时崩溃，请稍后再试")
+                _logger.w(json_data["msg"])
+                _logger.w("词达人验证服务器暂时崩溃，请稍后再试")
                 input()
-            Log.i("验证码即将展示，若看不清可输入-1重新生成")
+            _logger.i("验证码即将展示，若看不清可输入-1重新生成")
             from cdr.utils import VerificationCode
             code = VerificationCode.get_vc(json_data["data"]["original_image"], task_id)
-            Log.v(code)
+            _logger.v(code)
             while code == "-1":
                 import os
                 os.remove(f"{CONFIG_DIR_PATH}验证码-{task_id}.png")
@@ -299,12 +303,12 @@ class CDRTask:
                 if json_data["code"] == 0 and json_data["msg"] == "无需验证":
                     return
                 elif json_data["code"] == 0:
-                    Log.v("")
-                    Log.w(json_data["msg"])
-                    Log.w("词达人验证服务器暂时崩溃，请稍后再试")
+                    _logger.v("")
+                    _logger.w(json_data["msg"])
+                    _logger.w("词达人验证服务器暂时崩溃，请稍后再试")
                     input("按回车重新尝试生成验证码")
                     continue
-                Log.i("验证码即将展示，若看不清可输入-1重新生成")
+                _logger.i("验证码即将展示，若看不清可输入-1重新生成")
                 code = VerificationCode.get_vc(json_data["data"]["original_image"], task_id)
             timestamp = Tool.time()
             sign = Tool.md5(f"captcha_code={code}&task_id={task_id}&timestamp={timestamp}&versions={CDR_VERSION}"
@@ -320,7 +324,7 @@ class CDRTask:
             flag = res.json()["code"]
             res.close()
             if flag != 1:
-                Log.i("验证码核验错误，将重新生成验证码")
+                _logger.i("验证码核验错误，将重新生成验证码")
             else:
                 import os
                 os.remove(f"{CONFIG_DIR_PATH}验证码-{task_id}.png")
@@ -348,11 +352,11 @@ class CDRTask:
 
     @staticmethod
     def wait_admin_choose():
-        Log.w("建议携带error-last.txt反馈至负责人，由负责人排查BUG后继续")
-        Log.v(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt\n"
+        _logger.w("建议携带error-last.txt反馈至负责人，由负责人排查BUG后继续")
+        _logger.v(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt\n"
               "1. 以超时方式跳过本题\n2. 自主选择答案（待开发）\n"
               "#. 建议反馈此问题（该项不是选项），若要反馈此BUG，请不要选择选项1\n\n0. 结束程序")
-        Log.create_error_txt()
+        _logger.create_error_txt()
         code_type = input("\n请输入指令：")
         if CDRTask.check_input_data(code_type, 1) and code_type == "1":
             return

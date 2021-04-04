@@ -12,6 +12,9 @@ import os
 import sys
 
 
+_logger = Log.get_logger()
+
+
 def version():
     return cdr_version
 
@@ -24,6 +27,6 @@ if __name__ == '__main__':
     kernel32.SetConsoleMode(kernel32.GetStdHandle(-10), 128)
     os.system(f'title 词达人-v{cdr_version}')
     hook_except()
-    Log.i(f"词达人版本：{cdr_version}", is_show=False)
+    _logger.i(f"词达人版本：{cdr_version}", is_show=False)
     do_homework()
     sys.exit(0)

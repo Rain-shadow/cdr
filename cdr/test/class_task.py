@@ -19,7 +19,7 @@ from cdr.exception import NoPermission
 
 class ClassTask(CDRTask):
 
-    def run(self):
+    async def run(self):
         task_type_list = ["未知", "学习", "测试"]
         over_status_list = ["未知", "未开始", "进行中", "已过期"]
         time_type_list = ["未知", "开始", "截止", "截止"]
@@ -61,13 +61,12 @@ class ClassTask(CDRTask):
                     task_choose_list.append(task_list[int(c) - 1])
             if tem_flag:
                 break
-        course_set = set()
         if settings.is_multiple_task:
             # 课程单词预处理加载
             for task in task_choose_list:
                 course_id = task.get("course_id") or re.match(r'.*/(.*)\.jpg', task["course_img_url"]).group(1)
-                course_set.add(course_id)
-            course_map = self.course_pretreatment(course_set)
+                self._courses_set.add(course_id)
+            course_map = self.course_pretreatment()
             Tool.cls()
             t_list = []
             for task in task_choose_list:
