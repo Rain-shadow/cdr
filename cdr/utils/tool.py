@@ -15,16 +15,21 @@ import threading
 class Tool:
 
     @staticmethod
-    def __start_loop(loop):
+    def __start_loop(loop, is_run_forever):
         asyncio.set_event_loop(loop)
-        loop.run_forever()
+        if is_run_forever:
+            loop.run_forever()
 
     @staticmethod
-    def new_event_loop():
+    def new_event_loop(is_run_forever: bool = True):
         loop = asyncio.new_event_loop()
-        t = threading.Thread(target=Tool.__start_loop, args=(loop,))
+        t = threading.Thread(target=Tool.__start_loop, args=(loop, is_run_forever))
         t.start()
         return loop
+
+    @staticmethod
+    async def run_tasks(task_list: list, loop):
+        return await asyncio.gather(*task_list, loop=loop)
 
     @staticmethod
     def get_ratio_between_str(str_a: str, str_b: str) -> float:

@@ -14,11 +14,12 @@ from cdr.request.network_error import NetworkError
 from cdr.request.upper_limit_error import UpperLimitError
 
 __s = aiohttp.ClientSession()
+_logger = Log.get_logger()
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 async def __judge_code(res: aiohttp.ClientResponse) -> aiohttp.ClientResponse:
-    Log.i(await res.text(), is_show=False)
+    _logger.i(await res.text(), is_show=False)
     if res.status != 200:
         if res.url != "https://app.vocabgo.com/student/":
             raise NetworkError(res.status, res.url, await res.text("utf-8"))
@@ -28,10 +29,10 @@ async def __judge_code(res: aiohttp.ClientResponse) -> aiohttp.ClientResponse:
         except JSONDecodeError:
             pass
         else:
-            if res.url.find("gateway.vocabgo.com") != -1:
+            if res.url.raw_path.find("gateway.vocabgo.com") != -1:
                 if json_data and (json_data["code"] == 0 or json_data["code"] == 10002
                                   or json_data["code"] == 21006):
-                    Log.e(f"{json_data['code']}, {res.url}, {json_data['msg']}", is_show=False)
+                    _logger.e(f"{json_data['code']}, {res.url}, {json_data['msg']}", is_show=False)
                 if json_data and json_data["code"] == 10017:
                     raise UpperLimitError(res.status, res.url, json_data["msg"])
     return res
