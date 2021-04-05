@@ -98,7 +98,7 @@ class ClassTask(CDRTask):
         Log.i("本次全部任务已完成！")
         input("按回车键返回上一级")
 
-    def do_task(self, task, course_id, course):
+    async def do_task(self, task, course_id, course):
         time_out = settings.timeout
         is_random_score = settings.is_random_score
         is_show = not settings.is_multiple_task
@@ -136,7 +136,7 @@ class ClassTask(CDRTask):
                 json_data = res.json()
                 res.close()
                 if json_data["code"] == 21006:
-                    self.verify_human(task_id)
+                    await self.verify_human(task_id)
                     data["timestamp"] = Tool.time()
                     res = requests.get(url='https://gateway.vocabgo.com/Student/ClassTask/StartAnswer',
                                        headers=settings.header, params=data, timeout=time_out)
@@ -165,7 +165,7 @@ class ClassTask(CDRTask):
                     json_data = res.json()
                     res.close()
                     if json_data["code"] == 21006:
-                        self.verify_human(task_id)
+                        await self.verify_human(task_id)
                         data["timestamp"] = Tool.time()
                         res = requests.get(url='https://gateway.vocabgo.com/Student/ClassTask/StartAnswer',
                                            headers=settings.header, params=data, timeout=time_out)
@@ -201,7 +201,7 @@ class ClassTask(CDRTask):
                         json_data["data"]["topic_done_num"] <= json_data["data"]["topic_total"]:
                     if settings.is_multiple_task:
                         self.update_progress(str(release_id), json_data["data"]["topic_done_num"])
-                    json_data = self.do_question(answer, json_data, release_id, now_score, task_id)
+                    json_data = await self.do_question(answer, json_data, release_id, now_score, task_id)
                 if is_show:
                     Log.i(f"【{task['task_name']}】已完成。分数：{ClassTask.get_class_task_score(release_id)}")
                 else:
@@ -384,7 +384,7 @@ class ClassTask(CDRTask):
                 return task["score"]
         return 0
 
-    def do_question(self, answer: Answer, json_data: dict, release_id, now_score, task_id: int) -> dict:
+    async def do_question(self, answer: Answer, json_data: dict, release_id, now_score, task_id: int) -> dict:
         is_show = not settings.is_multiple_task
         Log.i(str(json_data["data"]["topic_done_num"])
               + "/" + str(json_data["data"]["topic_total"]) + ".", end='', is_show=is_show)
@@ -397,13 +397,13 @@ class ClassTask(CDRTask):
             if ClassTask.get_class_task_score(release_id) >= now_score:
                 Log.i(f"[mode:{json_data['data']['topic_mode']}]{json_data['data']['stem']['content']}"
                       + "   已达本次既定分数，超时本题！", is_show=is_show)
-                json_data = CDRTask.skip_answer(json_data["data"]["topic_code"],
-                                                json_data["data"]["topic_mode"],
-                                                "ClassTask")
+                json_data = await CDRTask.skip_answer(json_data["data"]["topic_code"],
+                                                      json_data["data"]["topic_mode"],
+                                                      "ClassTask")
             else:
-                json_data = self.find_answer_and_finish(answer, json_data["data"], 1, task_id)
+                json_data = await self.find_answer_and_finish(answer, json_data["data"], 1, task_id)
         else:
-            json_data = self.find_answer_and_finish(answer, json_data["data"], 1, task_id)
+            json_data = await self.find_answer_and_finish(answer, json_data["data"], 1, task_id)
         #   每10道题清理一次gc
         if json_data.get("data") is None:
             Log.e(json_data, is_show=False)

@@ -59,7 +59,7 @@ class Log:
         return Log.__ALL_LOGGER[threading.currentThread().name]
 
     def __record_log(self, content, end='\n'):
-        self.__content.extend(list(content))
+        self.__content.extend(list(str(content)))
         self.__content.extend(list(end))
         self.__count += 1
         if threading.current_thread() is threading.main_thread() \

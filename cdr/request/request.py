@@ -14,6 +14,8 @@ from cdr.utils import Log
 from .network_error import NetworkError
 from .upper_limit_error import UpperLimitError
 
+_logger = Log.get_logger()
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 __s = requests.Session()
@@ -24,7 +26,11 @@ __s.adapters.DEFAULT_RETRIES = 15
 
 
 def __judge_code(res: requests.models.Response) -> requests.models.Response:
-    Log.i(res.content, is_show=False)
+    try:
+        _logger.i(res.content.decode("utf-8"), is_show=False)
+    except UnicodeDecodeError:
+        # _logger.i(res.content, is_show=False)
+        pass
     if res.status_code != 200:
         if res.url != "https://app.vocabgo.com/student/":
             raise NetworkError(res.status_code, res.url, res.content.decode("utf-8"))
@@ -37,7 +43,7 @@ def __judge_code(res: requests.models.Response) -> requests.models.Response:
             if res.url.find("gateway.vocabgo.com") != -1:
                 if json_data and (json_data["code"] == 0 or json_data["code"] == 10002
                                   or json_data["code"] == 21006):
-                    Log.e(f"{json_data['code']}, {res.url}, {json_data['msg']}", is_show=False)
+                    _logger.e(f"{json_data['code']}, {res.url}, {json_data['msg']}", is_show=False)
                 if json_data and json_data["code"] == 10017:
                     raise UpperLimitError(res.status_code, res.url, json_data["msg"])
     return res

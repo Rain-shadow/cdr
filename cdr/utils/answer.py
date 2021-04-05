@@ -12,6 +12,8 @@ from .tool import Tool
 from .adapt import adapter
 from cdr.exception import AnswerNotFoundException
 
+_logger = Log.get_logger()
+
 
 class Answer:
 
@@ -22,12 +24,12 @@ class Answer:
     # remark 例句的翻译
     # options 题目选项
     def find_answer_by_11(self, assist_word: str, remark: str, options: list, skip_times: int) -> str:
-        Log.d("\nfind_answer_by_11")
-        Log.d(assist_word)
-        Log.d(options)
+        _logger.d("\nfind_answer_by_11")
+        _logger.d(assist_word)
+        _logger.d(options)
         # 根据辅助词先行过滤出一个粗略的可能性列表
         answer_list = self._course.find_detail_by_assist_word(assist_word)
-        Log.d(answer_list)
+        _logger.d(answer_list)
         if len(answer_list) == 0:
             # 辅助词过滤出现未适配情况或者出现答案预处理出错的情况
             raise AnswerNotFoundException(11)
@@ -38,7 +40,7 @@ class Answer:
                         tem_list = adapter.process_option_mean(mean["content"])
                         # 若选项集合与题库集合的交集存在，则说明该选项等于题库中的某个选项
                         # 由 mean == content["mean"] 拓展适配得来
-                        if len(Set(tem_list) & Set(adapter.process_word_mean(content["mean"]))) != 0:
+                        if len(set(tem_list) & set(adapter.process_word_mean(content["mean"]))) != 0:
                             if skip_times != 0:
                                 skip_times -= 1
                                 continue
@@ -49,12 +51,12 @@ class Answer:
     # remark 例句的翻译
     # options 题目选项
     def find_answer_by_13(self, assist_word: str, remark: str, options: list) -> str:
-        Log.d("\nfind_answer_by_13")
-        Log.d(assist_word)
-        Log.d(remark)
-        Log.d(options)
+        _logger.d("\nfind_answer_by_13")
+        _logger.d(assist_word)
+        _logger.d(remark)
+        _logger.d(options)
         answer_list = self._course.find_detail_by_assist_word(assist_word)
-        Log.d(answer_list)
+        _logger.d(answer_list)
         if len(answer_list) == 0:
             raise AnswerNotFoundException(13)
         for answer in answer_list:
@@ -67,11 +69,11 @@ class Answer:
                             tem_list.append(content["example"][key])
                     for sentence in options:
                         if sentence["content"] in tem_list:
-                            Log.d(sentence["content"])
+                            _logger.d(sentence["content"])
                             return str(sentence["answer_tag"])
                     for sentence in options:
                         if Tool.is_str_in_list_by_some_difference(sentence["content"], tem_list):
-                            Log.d(sentence["content"])
+                            _logger.d(sentence["content"])
                             return str(sentence["answer_tag"])
         raise AnswerNotFoundException(13)
 
@@ -79,11 +81,11 @@ class Answer:
     # word 单词原型，精确匹配，效率极高
     # options 题目选项
     def find_answer_by_15(self, word: str, options: list) -> str:
-        Log.d("\nfind_answer_by_15")
-        Log.d(word)
-        Log.d(options)
+        _logger.d("\nfind_answer_by_15")
+        _logger.d(word)
+        _logger.d(options)
         answer = self._course.find_detail_by_word(word)
-        Log.d(answer)
+        _logger.d(answer)
         if answer is None:
             raise AnswerNotFoundException(15)
         #   创建一个临时列表
@@ -100,11 +102,11 @@ class Answer:
     # content 单词词义
     # options 题目选项
     def find_answer_by_17(self, content: str, options: list) -> str:
-        Log.d("\nfind_answer_by_17")
-        Log.d(content)
+        _logger.d("\nfind_answer_by_17")
+        _logger.d(content)
         content = re.sub(r'\s\s', ' ', content)
-        Log.d(content)
-        Log.d(options)
+        _logger.d(content)
+        _logger.d(options)
         content_list = adapter.process_option_mean(content)
         # 21.3.17修复由群友转交给115***706提交的BUG，我们仍未知道那天是哪位群友的贡献
         if content.find("（") != -1:
@@ -113,7 +115,7 @@ class Answer:
         content_set = Set(content_list)
         for word in options:
             answer = self._course.find_detail_by_word(word["content"])
-            Log.d(answer)
+            _logger.d(answer)
             if answer is None:  # 选项中可能存在不在课程中的单词，故查询结果可能为空
                 continue
             #   创建一个临时列表
@@ -128,8 +130,8 @@ class Answer:
     # 无需兼容，本身即可得出答案，最让人安心的一个
     @staticmethod
     def find_answer_by_31(remark: list, options: list) -> list:
-        Log.d("\find_answer_by_31")
-        Log.d(options)
+        _logger.d("\find_answer_by_31")
+        _logger.d(options)
         tem_list = []
         for i in remark:
             tem_list.append(i["relation"])
@@ -143,17 +145,17 @@ class Answer:
     # options 题目选项
     # blank_count 填空所需单词数量
     def find_answer_by_32(self, remark: str, options: list, blank_count: int, skip_times: int) -> str:
-        Log.d("\nfind_answer_by_32")
-        Log.d(remark)
-        Log.d(options)
-        Log.d(f"{blank_count:d}")
+        _logger.d("\nfind_answer_by_32")
+        _logger.d(remark)
+        _logger.d(options)
+        _logger.d(f"{blank_count:d}")
         # 选项预处理
         option_list = []  # 存放选项中的短语，短语由规定顺序的单词数组构成
         for usage in options:
             content, _ = adapter.process_content_and_remark(usage["content"], None)
-            Log.d(content, is_show=False)
+            _logger.d(content, is_show=False)
             option_list.extend(re.split(r"\s+", adapter.process_option_usage(content)))
-        Log.d(option_list, is_show=False)
+        _logger.d(option_list, is_show=False)
         option_set = Set(option_list)
         wrong_set = set()
 
@@ -161,7 +163,7 @@ class Answer:
             for content in value["content"]:
                 usage_list = content["usage"].get(remark) or adapter.usage_get_remark(content["usage"], remark)
                 if usage_list is not None:
-                    Log.d(usage_list, is_show=False)
+                    _logger.d(usage_list, is_show=False)
                     for usage in usage_list:
                         if len(option_set & Set(usage)) == len(usage):
                             if skip_times != 0 or adapter.answer_32_2(options, usage) in wrong_set:
@@ -187,17 +189,17 @@ class Answer:
     # remark 例句的翻译
     # options 题目选项
     def find_answer_by_41(self, content: str, remark: str, options: list) -> str:
-        Log.d("\nfind_answer_by_41")
-        Log.d(content)
+        _logger.d("\nfind_answer_by_41")
+        _logger.d(content)
         content = adapter.process_option_sentence(content)  # 合着您传输多个空格就为了增加网页端单词间距显示？？？
-        Log.d(content)
-        Log.d(options)
+        _logger.d(content)
+        _logger.d(options)
         for word in options:
             answer_list = self._course.find_detail_by_assist_word(word["content"])
             if len(answer_list) == 0:
                 continue
             for answer in answer_list:
-                Log.d(answer)
+                _logger.d(answer)
                 if answer is not None:
                     for example in answer["content"]:
                         for key in example["example"]:
@@ -211,16 +213,16 @@ class Answer:
     # remark 例句的翻译
     # options 题目选项
     def find_answer_by_43(self, content, remark, options) -> str:
-        Log.d("\nfind_answer_by_43")
-        Log.d(content)
+        _logger.d("\nfind_answer_by_43")
+        _logger.d(content)
         content = adapter.process_option_sentence(content)  # 合着您传输多个空格就为了增加网页端单词间距显示？？？
-        Log.d(content)
-        Log.d(options)
+        _logger.d(content)
+        _logger.d(options)
         for option in options:
             answer = self._course.find_detail_by_word(option["content"])
             if answer is None:
                 continue
-            Log.d(answer)
+            _logger.d(answer)
             if answer is not None:
                 #   创建一个临时列表，存放例句翻译
                 tem_list = []
@@ -249,13 +251,13 @@ class Answer:
     # remark 短语翻译
     # skip_times 跳过成功匹配答案的次数
     def find_answer_by_51(self, content: str, remark: str, skip_times: int) -> str:
-        Log.d("\nfind_answer_by_51")
-        Log.d(content)
-        Log.d(remark)
+        _logger.d("\nfind_answer_by_51")
+        _logger.d(content)
+        _logger.d(remark)
         content, remark = adapter.process_content_and_remark(content, remark)
         usage_list = adapter.process_option_usage(content).split(" ")
         usage_list_set = Set(usage_list)
-        Log.d(usage_list)
+        _logger.d(usage_list)
         remark_set = Set(adapter.process_option_mean(remark))
         for key, value in self._course.data.items():
             if len(usage_list) == 1:
@@ -270,7 +272,7 @@ class Answer:
                     usages = content_list["usage"].get(remark)\
                              or adapter.usage_get_remark(content_list["usage"], remark)
                     if usages is not None:
-                        Log.d(usages)
+                        _logger.d(usages)
                         for usage in usages:
                             # 修复长度判断，该bug由群友169***762提供
                             if len(usage_list) - 1 != len(usage_list_set & Set(usage))\
@@ -290,11 +292,11 @@ class Answer:
     # content 英语例句
     # remark 例句翻译
     def find_answer_by_53(self, content: str, remark: str) -> str:
-        Log.d("\nfind_answer_by_53")
-        Log.d(content)
-        Log.d(remark)
+        _logger.d("\nfind_answer_by_53")
+        _logger.d(content)
+        _logger.d(remark)
         content = adapter.process_option_sentence(content)
-        Log.d(content)
+        _logger.d(content)
         for key, value in self._course.data.items():
             for example in value["content"]:
                 if content == "{}":

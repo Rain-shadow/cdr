@@ -4,6 +4,7 @@
 # @Time  : 2020-12-19, 0019 15:32
 # @Author: 佚名
 # @File  : core.py
+import asyncio
 import os
 import sys
 import time
@@ -13,7 +14,6 @@ from cdr.config import CDR_VERSION, CONFIG_DIR_PATH
 from cdr.test import ClassTask, MyselfTask
 from cdr.utils import settings, Log, Tool
 from cdr.url import URL
-
 
 _logger = Log.get_logger()
 
@@ -46,6 +46,7 @@ def do_homework():
     time.sleep(1)
     #   信息显示
     Tool.cls()
+    loop = asyncio.get_event_loop()
     while True:
         if json['user_info'].get('class_name') is None:
             _logger.v(f"\n{json['user_info']['student_name']}（未加入班级）\n")
@@ -58,22 +59,18 @@ def do_homework():
         choose = input("请输入序号：")
         if choose == "1":
             _logger.i("正在加载任务列表中，请稍等......")
-            ClassTask().run()
+            loop.run_until_complete(ClassTask().run())
             Tool.cls()
         elif choose == "2":
             _logger.i("正在加载任务列表中，请稍等......")
             URL.load_myself_task_list()
-            MyselfTask(json['user_info']['course_id']).run()
+            loop.run_until_complete(MyselfTask(json['user_info']['course_id']).run())
             Tool.cls()
         elif choose == "3":
             settings.user_token = ""
             settings.save()
             Login()
             Tool.cls()
-            res = requests.get("https://gateway.vocabgo.com/Student/Main?timestamp="
-                               f"{Tool.time()}&versions={CDR_VERSION}", headers=settings.header)
-            json = res.json()["data"]
-            res.close()
         elif choose == "4":
             os.system(f'notepad {CONFIG_DIR_PATH + "config.txt"}')
             settings.reload()

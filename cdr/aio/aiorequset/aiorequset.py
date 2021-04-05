@@ -3,9 +3,10 @@
 # cython : language_level=3
 # @Time  : 2020-12-30, 0030 16:09
 # @Author: 佚名
-# @File  : request.py
+# @File  : aiorequest.py
 from json import JSONDecodeError
 
+import asyncio
 import aiohttp
 import urllib3
 
@@ -40,7 +41,7 @@ async def __judge_code(res: aiohttp.ClientResponse) -> aiohttp.ClientResponse:
 
 async def options(url, **kwargs) -> aiohttp.ClientResponse:
     async with __s.options(url, **kwargs) as res:
-        return await __judge_code(res)
+        return res
 
 
 async def get(url, params=None, **kwargs) -> aiohttp.ClientResponse:
@@ -51,3 +52,8 @@ async def get(url, params=None, **kwargs) -> aiohttp.ClientResponse:
 async def post(url, data=None, json=None, **kwargs) -> aiohttp.ClientResponse:
     async with __s.post(url=url, data=data, json=json, **kwargs) as res:
         return await __judge_code(res)
+
+
+def close_session():
+    loop = asyncio.get_event_loop()
+    asyncio.run_coroutine_threadsafe(__s.close(), loop)

@@ -8,7 +8,7 @@ import asyncio
 import json
 import re
 import os
-import cdr.aiorequset as requests
+from cdr.aio import aiorequset as requests
 from cdr.exception import NoPermission
 from .setting import _settings
 from .log import Log
@@ -23,12 +23,8 @@ class Course:
     DATA_VERSION = 10
 
     def __init__(self, course_id):
-        is_show = not _settings.is_multiple_task
         self.id = course_id
         self.data = {}
-        if self._load_local_answer():
-            return
-        _logger.i("从网络装载题库中......(10s-30s)", is_show=is_show)
         self._headers = {
             "Host": "gateway.vocabgo.com",
             "Accept": "application/json, text/plain, */*",
@@ -48,6 +44,9 @@ class Course:
 
     async def load_word(self):
         is_show = not _settings.is_multiple_task
+        if self._load_local_answer():
+            return
+        _logger.i("从网络装载题库中......(10s-30s)", is_show=is_show)
         #   获取课程所有列表
         data = {
             "course_id": self.id,
