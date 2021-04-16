@@ -21,7 +21,9 @@ class Tasks:
         self.work_list.extend(works)
         await self._queue.join()
         for w in works:
-            w.cancel()  # 任务并不会立刻变为取消的状态，而是要等到下次的事件循环
+            w.cancel()
+        # Wait until all worker tasks are cancelled.
+        await asyncio.gather(*works)
 
     async def __work(self):
         try:
@@ -29,8 +31,17 @@ class Tasks:
                 fs = await self._queue.get()
                 await asyncio.gather(*fs)
                 self._queue.task_done()
-        except asyncio.CancelledError:
+        except asyncio.CancelledError as e:
             pass
+        except Exception as e:
+            # 当发生异常时，清除队列所有剩余任务
+            self._queue.task_done()
+            while not self._queue.empty():
+                fs = self._queue.get_nowait()
+                for future in fs:
+                    future.close()
+                self._queue.task_done()
+            raise e
 
     def add_task(self, fs):
         if asyncio.futures.isfuture(fs) or asyncio.coroutines.iscoroutine(fs):
