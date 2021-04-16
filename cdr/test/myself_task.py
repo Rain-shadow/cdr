@@ -52,16 +52,14 @@ class MyselfTask(CDRTask):
                     task_choose_list.append(task_list[int(c) - 1])
             if tem_flag:
                 break
-        if settings.is_multiple_task:
-            # 课程单词预处理加载
-            _logger.i("已开启多任务答题，预加载任务所需题库中......")
+        # 课程单词预处理加载
         self._courses_set.add(course_id)
         course_map = await self.course_pretreatment()
         Tool.cls()
         for task in task_choose_list:
             self._tasks.add_task([
                 self.do_task(task, course_id, course_map[course_id])
-                for _ in range(1)
+                for _ in range(settings.multiple_task)
             ])
         await self.start_task()
         _logger.i("本次全部任务已完成！")

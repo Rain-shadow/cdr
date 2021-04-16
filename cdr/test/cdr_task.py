@@ -23,9 +23,8 @@ class CDRTask:
         self.__line_progress: LineProgress = None
         self.__progress_count = 0
         self.__course_map = {}
-        self._thread_count = 0
         self._courses_set = set()
-        self._tasks = Tasks(max_async=settings.multiple_task)
+        self._tasks = Tasks(max_async=settings.multiple_chapter)
 
     def add_progress(self, key: str, title: str, total: int):
         tail = "%"
@@ -51,7 +50,7 @@ class CDRTask:
         pass
 
     async def course_pretreatment(self) -> dict:
-        _logger.i("已开启多任务答题，预加载任务所需题库中......")
+        _logger.i("预加载任务所需题库中......")
         self.__course_map = {}
         task_list = []
         for course_id in self._courses_set:
