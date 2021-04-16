@@ -22,7 +22,7 @@ def _get_encode_info(file):
 
 
 class Settings(object):
-    VERSION = 7
+    VERSION = 8
     _instance_lock = threading.Lock()
 
     def __init__(self):
@@ -32,6 +32,7 @@ class Settings(object):
         self._is_random_score = False
         self._is_style_by_percent = True
         self._multiple_task = 1
+        self._multiple_chapter = 1
         self._min_random_time = 5
         self._max_random_time = 12
         self._base_score = 90
@@ -54,7 +55,7 @@ class Settings(object):
             "isRandomTime": self.is_random_time,
             "isRandomScore": self.is_random_score,
             "isStyleByPercent": self.is_style_by_percent,
-            "multipleTask": self._multiple_task,
+            "multipleChapter": self._multiple_chapter,
             "minRandomTime": self.min_random_time,
             "maxRandomTime": self.max_random_time,
             "baseScore": self.base_score,
@@ -88,6 +89,7 @@ class Settings(object):
                 "isRandomScore": False,
                 "isStyleByPercent": True,
                 "multipleTask": 1,
+                "multipleChapter": 1,
                 "minRandomTime": 5,
                 "maxRandomTime": 12,
                 "baseScore": 91,
@@ -109,8 +111,9 @@ class Settings(object):
                 "警告！关闭该项会造成控分系统出现巨大误差，会让实际分数远高于目标分数（当然不可能超过100）",
                 "isRandomScore: 是否开启控分选项，实际成绩总是略高于目标分数，但不超过100。取值[true/false]",
                 "isStyleByPercent: 在多任务中是否让进度条以百分比显示，对于任务量较重的建议关闭，将以具体数量显示。取值[true/false]",
-                "multipleTask: 同时进行的任务数量，最低为1，最大为6，若格式错误将重置为1",
+                "multipleTask: 同时进行的任务数量，最低为1，最大为30，若格式错误将重置为1，相当于用几支笔做罚抄作业",
                 "警告！该功能为实验性功能，或许会存在未知BUG！请谨慎开启！",
+                "multipleChapter: 同时进行的测试数量，最低为1，最大为6，若格式错误将重置为1，相当于同时做几门作业",
                 "警告！虽在个人测试中未有封号现象，但无法保证该现象为普遍现象，更无法保证以后也如此，请谨慎开启！",
                 "maxRandomTime: 最大随机时间，其值不得小于minRandomTime，单位：秒",
                 "minRandomTime: 最小随机时间，其值不得大于maxRandomTime，单位：秒",
@@ -129,6 +132,7 @@ class Settings(object):
         self.is_random_score = s_json["isRandomScore"]
         self.is_style_by_percent = s_json["isStyleByPercent"]
         self.multiple_task = s_json["multipleTask"]
+        self.multiple_chapter = s_json["multipleChapter"]
         self.min_random_time = s_json["minRandomTime"]
         self.max_random_time = s_json["maxRandomTime"]
         self.base_score = s_json["baseScore"]
@@ -144,6 +148,8 @@ class Settings(object):
             json_config["multipleTask"] = 1
         if version < 7:
             json_config["isStyleByPercent"] = True
+        if version < 8:
+            json_config["multipleChapter"] = 1
         return json_config
 
     @property
@@ -210,10 +216,24 @@ class Settings(object):
         if not isinstance(value, int):
             self._multiple_task = 1
         else:
-            if value > 6 or value < 1:
+            if value > 30 or value < 1:
                 self._multiple_task = 1
             else:
                 self._multiple_task = value
+
+    @property
+    def multiple_chapter(self):
+        return self._multiple_chapter
+
+    @multiple_chapter.setter
+    def multiple_chapter(self, value):
+        if not isinstance(value, int):
+            self._multiple_chapter = 1
+        else:
+            if value > 6 or value < 1:
+                self._multiple_chapter = 1
+            else:
+                self._multiple_chapter = value
 
     @property
     def min_random_time(self):
