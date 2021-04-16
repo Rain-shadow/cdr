@@ -61,7 +61,6 @@ def __my_except_hook(exc_type, exc_value, tb):
 
 def handle_async_exception(loop, context):
     # first, handle with default handler
-    print(context)
     exception = context.get('exception')
     if exception is not None:
         __my_except_hook(type(exception), exception, exception.__traceback__)
@@ -72,5 +71,4 @@ def handle_async_exception(loop, context):
 def hook_except():
     loop = asyncio.get_event_loop()
     loop.set_exception_handler(handle_async_exception)
-    loop.set_debug(True)
     sys.excepthook = __my_except_hook

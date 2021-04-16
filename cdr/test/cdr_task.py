@@ -45,7 +45,7 @@ class CDRTask:
         pass
 
     async def start_task(self):
-        await asyncio.gather(self._tasks.run())
+        await asyncio.create_task(self._tasks.run())
 
     async def do_task(self, task: dict, course_id: str, course: Course):
         pass
@@ -139,7 +139,6 @@ class CDRTask:
     @staticmethod
     def task_find_answer(answer: Answer, topic_mode: int, content, remark, options: list, skip_times):
         # 答案查找
-        tem = 0 / 0
         is_skip = None
         answer_id = None
         try:
