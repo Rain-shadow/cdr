@@ -4,13 +4,32 @@
 # @Time  : 2020-12-20, 0020 22:29
 # @Author: 佚名
 # @File  : tool.py
+import asyncio
 import difflib
 import hashlib
 import os
 import time
+import threading
 
 
 class Tool:
+
+    @staticmethod
+    def __start_loop(loop, is_run_forever):
+        asyncio.set_event_loop(loop)
+        if is_run_forever:
+            loop.run_forever()
+
+    @staticmethod
+    def new_event_loop(is_run_forever: bool = True):
+        loop = asyncio.new_event_loop()
+        t = threading.Thread(target=Tool.__start_loop, args=(loop, is_run_forever))
+        t.start()
+        return loop
+
+    @staticmethod
+    async def run_tasks(task_list: list, loop):
+        return await asyncio.gather(*task_list, loop=loop)
 
     @staticmethod
     def get_ratio_between_str(str_a: str, str_b: str) -> float:

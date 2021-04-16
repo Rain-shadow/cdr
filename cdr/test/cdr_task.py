@@ -4,16 +4,16 @@
 # @Time  : 2020-12-25, 0025 10:10
 # @Author: 佚名
 # @File  : cdr_task.py
+import asyncio
 import sys
 import random
-import time
-import threading
-import cdr.request as requests
-from threading import Lock
+from cdr.aio import aiorequset as requests, Tasks
 from cdr.exception import AnswerNotFoundException, AnswerWrong
 from cdr.utils import settings, Answer, Course, Log, Tool
 from cdr.eprogress import LineProgress, MultiProgressManager
 from cdr.config import CDR_VERSION, CONFIG_DIR_PATH, LOG_DIR_PATH
+
+_logger = Log.get_logger()
 
 
 class CDRTask:
@@ -22,9 +22,9 @@ class CDRTask:
         self._progress = MultiProgressManager()
         self.__line_progress: LineProgress = None
         self.__progress_count = 0
-        self._lock = Lock()
         self.__course_map = {}
-        self._thread_count = 0
+        self._courses_set = set()
+        self._tasks = Tasks(max_async=settings.multiple_chapter)
 
     def add_progress(self, key: str, title: str, total: int):
         tail = "%"
@@ -35,103 +35,85 @@ class CDRTask:
 
     def update_progress(self, key: str, progress: float, data: dict = None):
         self._progress.update(key, progress, data)
-        Log.i(f"Key: {key}, Progress: {progress}", is_show=False)
+        _logger.i(f"Key: {key}, Progress: {progress}", is_show=False)
 
     def finish_progress(self, key: str, msg):
         self._progress.finish(key, msg)
 
-    def run(self):
+    async def run(self):
         pass
 
-    def do_task(self, task: dict, course_id: str, course: Course):
+    async def start_task(self):
+        await asyncio.create_task(self._tasks.run())
+
+    async def do_task(self, task: dict, course_id: str, course: Course):
         pass
 
-    def course_pretreatment(self, course: set) -> dict:
-        Log.i("已开启多任务答题，预加载任务所需题库中......")
-        self.__line_progress = LineProgress(total=len(course), width=50, title="题库加载进度")
-        self.__line_progress.update(0)
-        t_list = []
+    async def course_pretreatment(self) -> dict:
+        _logger.i("预加载任务所需题库中......")
         self.__course_map = {}
-        for course_id in course:
-            thread = threading.Thread(target=self.__load_course, args=(course_id,))
-            thread.setDaemon(True)
-            thread.start()
-            t_list.append(thread)
-        for thread in t_list:
-            thread.join()
+        task_list = []
+        for course_id in self._courses_set:
+            self.__course_map[course_id] = Course(course_id)
+            task_list.append(self.__course_map[course_id].load_word())
+        await asyncio.gather(*task_list)
         return self.__course_map
 
-    def __load_course(self, course_id: str):
-        self.__course_map[course_id] = Course(course_id)
-        self._lock.acquire()
-        self.__progress_count += 1
-        self._lock.release()
-        self.__line_progress.update(self.__progress_count)
-
-    @property
-    def thread_count(self):
-        return self._thread_count
-
-    @thread_count.setter
-    def thread_count(self, value):
-        self._lock.acquire()
-        self._thread_count = value
-        self._lock.release()
-
-    def find_answer_and_finish(self, answer: Answer, data: dict, type_id: int, task_id: int) -> dict:
+    async def find_answer_and_finish(self, answer: Answer, data: dict, type_id: int, task_id: int) -> dict:
         is_show = not settings.is_multiple_task
         type_mode = ["StudyTask", "ClassTask"]
         content = data["stem"]["content"]
         remark = data["stem"]["remark"]
         topic_mode = data["topic_mode"]
         if topic_mode == 31:
-            Log.v(f"[mode:{topic_mode}]{str(content)}", end='', is_show=is_show)
+            _logger.v(f"[mode:{topic_mode}]{str(content)}", end='', is_show=is_show)
         else:
-            Log.v(f"[mode:{topic_mode}]{content}({remark})", end='', is_show=is_show)
+            _logger.v(f"[mode:{topic_mode}]{content}({remark})", end='', is_show=is_show)
         topic_code = data["topic_code"]
         options = data["options"]
         time_spent = CDRTask.get_random_time(topic_mode, min_time=settings.min_random_time,
                                              max_time=settings.max_random_time)
-        time.sleep(time_spent / 1000)
+        await asyncio.sleep(time_spent / 1000)
         #   根据获取到的答案与现行答案进行匹配
         skip_times = 0
         has_chance = True
         while has_chance:
             answer_id, is_skip = CDRTask.task_find_answer(answer, topic_mode, content, remark, options, skip_times)
             if is_skip:
-                return CDRTask.skip_answer(topic_code, topic_mode, type_mode[type_id])
+                return await CDRTask.skip_answer(topic_code, topic_mode, type_mode[type_id])
                 # 答案验证
             try:
                 if topic_mode == 31:
                     tem_list = answer_id
                     for i in range(0, data["answer_num"]):
                         answer_id = tem_list[i]
-                        topic_code, _ = self.verify_answer(answer_id, topic_code, type_mode[type_id], task_id)
+                        topic_code, _ = await self.verify_answer(answer_id, topic_code, type_mode[type_id], task_id)
                         if not settings.is_random_time:
-                            time.sleep(0.1)
+                            await asyncio.sleep(0.1)
                         else:
-                            time.sleep(random.randint(3 * 1000, 5 * 1000) / 1000)
+                            await asyncio.sleep(random.randint(3 * 1000, 5 * 1000) / 1000)
                     has_chance = False
                 else:
-                    topic_code, has_chance = self.verify_answer(answer_id, topic_code, type_mode[type_id], task_id)
+                    topic_code, has_chance = await self.verify_answer(answer_id, topic_code,
+                                                                      type_mode[type_id], task_id)
             except AnswerWrong as e:
                 topic_code = e.topic_code
                 if e.has_chance:
                     skip_times += 1
-                    Log.w(e, is_show=False)
-                    Log.w(f"第{skip_times}次查询答案出错，尝试跳过原答案进行搜索", is_show=False)
+                    _logger.w(e, is_show=False)
+                    _logger.w(f"第{skip_times}次查询答案出错，尝试跳过原答案进行搜索", is_show=False)
                     continue
-                Log.v("")
-                Log.w("答案错误！")
-                Log.w(e)
-                Log.w("请携带error-last.txt寻找GM排除适配问题")
-                Log.w(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt")
-                Log.create_error_txt()
+                _logger.v("")
+                _logger.w("答案错误！")
+                _logger.w(e)
+                _logger.w("请携带error-last.txt寻找GM排除适配问题")
+                _logger.w(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt")
+                _logger.create_error_txt()
                 input("等待错误检查（按下回车键即可继续执行）")
-                return CDRTask.skip_answer(topic_code, topic_mode, type_mode[type_id])
+                return await CDRTask.skip_answer(topic_code, topic_mode, type_mode[type_id])
             else:
                 has_chance = False
-                Log.v("   Done！", is_show=is_show)
+                _logger.v("   Done！", is_show=is_show)
         timestamp = Tool.time()
         sign = Tool.md5(f"time_spent={time_spent}&timestamp={timestamp}&topic_code={topic_code}"
                         + f"&versions={CDR_VERSION}ajfajfamsnfaflfasakljdlalkflak")
@@ -142,13 +124,13 @@ class CDRTask:
             "versions": CDR_VERSION,
             "sign": sign
         }
-        res = requests.post(
+        res = await requests.post(
             url='https://gateway.vocabgo.com/Student/' + type_mode[type_id] + '/SubmitAnswerAndSave',
             json=data, headers=settings.header, timeout=settings.timeout)
-        json_data = res.json()
+        json_data = await res.json()
         res.close()
         if json_data["code"] == 21006:
-            self.verify_human(task_id)
+            await self.verify_human(task_id)
             data["timestamp"] = Tool.time()
             res = requests.post(
                 url='https://gateway.vocabgo.com/Student/' + type_mode[type_id] + '/SubmitAnswerAndSave',
@@ -192,12 +174,12 @@ class CDRTask:
             elif topic_mode == 53 or topic_mode == 54:
                 answer_id = answer.find_answer_by_53(content, remark)
             else:
-                Log.w(f"未知题型：{topic_mode}")
-                Log.create_error_txt()
+                _logger.w(f"未知题型：{topic_mode}")
+                _logger.create_error_txt()
                 input("等待错误检查（按下回车键键即可继续执行）")
         except AnswerNotFoundException as e:
-            Log.v("")
-            Log.w(f"{e}")
+            _logger.v("")
+            _logger.w(f"{e}")
             CDRTask.wait_admin_choose()
             is_skip = True
         return answer_id, is_skip
@@ -239,7 +221,7 @@ class CDRTask:
             max_score = 1000
         return random.randint(min_score, max_score) / 10.0
 
-    def verify_answer(self, answer: str, topic_code: str, type_mode: str, task_id: int):
+    async def verify_answer(self, answer: str, topic_code: str, type_mode: str, task_id: int):
         timestamp = Tool.time()
         sign = Tool.md5(f"answer={answer}&timestamp={timestamp}&topic_code={topic_code}"
                         + f"&versions={CDR_VERSION}ajfajfamsnfaflfasakljdlalkflak")
@@ -250,31 +232,31 @@ class CDRTask:
             "versions": CDR_VERSION,
             "sign": sign
         }
-        res = requests.post(url=f'https://gateway.vocabgo.com/Student/{type_mode}/VerifyAnswer',
-                            json=data, headers=settings.header, timeout=settings.timeout)
-        json_data = res.json()
+        res = await requests.post(url=f'https://gateway.vocabgo.com/Student/{type_mode}/VerifyAnswer',
+                                  json=data, headers=settings.header, timeout=settings.timeout)
+        json_data = await res.json()
         res.close()
         if json_data["code"] == 21006:
-            self.verify_human(task_id)
+            await self.verify_human(task_id)
             data["timestamp"] = Tool.time()
-            res = requests.post(url=f'https://gateway.vocabgo.com/Student/{type_mode}/VerifyAnswer',
-                                json=data, headers=settings.header, params=data, timeout=settings.timeout)
-            json_data = res.json()
+            res = await requests.post(url=f'https://gateway.vocabgo.com/Student/{type_mode}/VerifyAnswer',
+                                      json=data, headers=settings.header, params=data, timeout=settings.timeout)
+            json_data = await res.json()
             res.close()
         if json_data['code'] == 10017:
-            Log.w(f"\n{json_data['msg']}")
-            Log.w("该限制为词达人官方行为，与作者无关\n按回车退出程序")
+            _logger.w(f"\n{json_data['msg']}")
+            _logger.w("该限制为词达人官方行为，与作者无关\n按回车退出程序")
             input()
             sys.exit(0)
         if json_data['data']["answer_result"] == 1:
             pass
         else:
-            Log.w(json_data, is_show=False)
+            _logger.w(json_data, is_show=False)
             raise AnswerWrong(data, json_data['data']['topic_code'], json_data['data']["over_status"] != 1)
         return json_data['data']['topic_code'], json_data['data']["over_status"] != 1
 
-    def verify_human(self, task_id: int, check_type: str = "answer"):
-        self._lock.acquire()    # 防止多线程下输入混乱，用户无法分清
+    @staticmethod
+    async def verify_human(task_id: int, check_type: str = "answer"):
         data = {
             "check_type": check_type,
             "task_id": task_id,
@@ -282,36 +264,36 @@ class CDRTask:
         }
         while True:
             data["timestamp"] = Tool.time()
-            res = requests.get("https://gateway.vocabgo.com/Student/Captcha/Get",
-                               params=data, headers=settings.header, timeout=settings.timeout)
-            json_data = res.json()
+            res = await requests.get("https://gateway.vocabgo.com/Student/Captcha/Get",
+                                     params=data, headers=settings.header, timeout=settings.timeout)
+            json_data = await res.json()
             res.close()
             if json_data["code"] == 0 and json_data["msg"] == "无需验证":
                 return
             elif json_data["code"] == 0:
-                Log.w(json_data["msg"])
-                Log.w("词达人验证服务器暂时崩溃，请稍后再试")
+                _logger.w(json_data["msg"])
+                _logger.w("词达人验证服务器暂时崩溃，请稍后再试")
                 input()
-            Log.i("验证码即将展示，若看不清可输入-1重新生成")
+            _logger.i("验证码即将展示，若看不清可输入-1重新生成")
             from cdr.utils import VerificationCode
             code = VerificationCode.get_vc(json_data["data"]["original_image"], task_id)
-            Log.v(code)
+            _logger.v(code)
             while code == "-1":
                 import os
                 os.remove(f"{CONFIG_DIR_PATH}验证码-{task_id}.png")
-                res = requests.get("https://gateway.vocabgo.com/Student/Captcha/Get",
-                                   params=data, headers=settings.header, timeout=settings.timeout)
-                json_data = res.json()
+                res = await requests.get("https://gateway.vocabgo.com/Student/Captcha/Get",
+                                         params=data, headers=settings.header, timeout=settings.timeout)
+                json_data = await res.json()
                 res.close()
                 if json_data["code"] == 0 and json_data["msg"] == "无需验证":
                     return
                 elif json_data["code"] == 0:
-                    Log.v("")
-                    Log.w(json_data["msg"])
-                    Log.w("词达人验证服务器暂时崩溃，请稍后再试")
+                    _logger.v("")
+                    _logger.w(json_data["msg"])
+                    _logger.w("词达人验证服务器暂时崩溃，请稍后再试")
                     input("按回车重新尝试生成验证码")
                     continue
-                Log.i("验证码即将展示，若看不清可输入-1重新生成")
+                _logger.i("验证码即将展示，若看不清可输入-1重新生成")
                 code = VerificationCode.get_vc(json_data["data"]["original_image"], task_id)
             timestamp = Tool.time()
             sign = Tool.md5(f"captcha_code={code}&task_id={task_id}&timestamp={timestamp}&versions={CDR_VERSION}"
@@ -323,19 +305,19 @@ class CDRTask:
                 "timestamp": timestamp,
                 "versions": CDR_VERSION
             }
-            res = requests.post("https://gateway.vocabgo.com/Student/Captcha/Check", json=data, headers=settings.header)
-            flag = res.json()["code"]
+            res = await requests.post("https://gateway.vocabgo.com/Student/Captcha/Check",
+                                      json=data, headers=settings.header)
+            flag = (await res.json())["code"]
             res.close()
             if flag != 1:
-                Log.i("验证码核验错误，将重新生成验证码")
+                _logger.i("验证码核验错误，将重新生成验证码")
             else:
                 import os
                 os.remove(f"{CONFIG_DIR_PATH}验证码-{task_id}.png")
                 break
-        self._lock.release()
 
     @staticmethod
-    def skip_answer(topic_code: str, topic_mode: int, type_mode: str) -> dict:
+    async def skip_answer(topic_code: str, topic_mode: int, type_mode: str) -> dict:
         time_spent = CDRTask.get_random_time(topic_mode, is_max=True)
         timestamp = Tool.time()
         sign = Tool.md5(f"time_spent={time_spent}&timestamp={timestamp}&topic_code={topic_code}"
@@ -347,19 +329,19 @@ class CDRTask:
             "versions": CDR_VERSION,
             "sign": sign
         }
-        res = requests.post(url=f'https://gateway.vocabgo.com/Student/{type_mode}/SkipAnswer',
-                            json=data, headers=settings.header, timeout=settings.timeout)
-        json = res.json()
+        res = await requests.post(url=f'https://gateway.vocabgo.com/Student/{type_mode}/SkipAnswer',
+                                  json=data, headers=settings.header, timeout=settings.timeout)
+        json = await res.json()
         res.close()
         return json
 
     @staticmethod
     def wait_admin_choose():
-        Log.w("建议携带error-last.txt反馈至负责人，由负责人排查BUG后继续")
-        Log.v(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt\n"
-              "1. 以超时方式跳过本题\n2. 自主选择答案（待开发）\n"
-              "#. 建议反馈此问题（该项不是选项），若要反馈此BUG，请不要选择选项1\n\n0. 结束程序")
-        Log.create_error_txt()
+        _logger.w("建议携带error-last.txt反馈至负责人，由负责人排查BUG后继续")
+        _logger.v(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt\n"
+                  "1. 以超时方式跳过本题\n2. 自主选择答案（待开发）\n"
+                  "#. 建议反馈此问题（该项不是选项），若要反馈此BUG，请不要选择选项1\n\n0. 结束程序")
+        _logger.create_error_txt()
         code_type = input("\n请输入指令：")
         if CDRTask.check_input_data(code_type, 1) and code_type == "1":
             return

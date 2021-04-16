@@ -13,23 +13,25 @@ import cdr.request as requests
 from cdr.config import CDR_VERSION, CONFIG_DIR_PATH
 from cdr.utils import settings, Log, Tool
 
+_logger = Log.get_logger()
+
 
 class Login:
 
     def __init__(self):
         Tool.cls()
         if settings.user_token != "0" and settings.user_token != "":
-            Log.i("尝试复用token")
+            _logger.i("尝试复用token")
             res = requests.get(url='https://gateway.vocabgo.com/Student/Main?timestamp={}&versions={}'
                                .format(Tool.time(), CDR_VERSION), headers=settings.header)
             code = res.json()["code"]
             res.close()
             if code == 1:
-                Log.i("授权成功")
-                Log.i("user_token:" + settings.user_token, is_show=False)
+                _logger.i("授权成功")
+                _logger.i("user_token:" + settings.user_token, is_show=False)
                 return
             else:
-                Log.i("曾用token已失效，重新执行授权流程！")
+                _logger.i("曾用token已失效，重新执行授权流程！")
         Login._generate_qr_code()
         res = requests.get(url='https://gateway.vocabgo.com/Student/Main?timestamp={}&versions={}'
                            .format(Tool.time(), CDR_VERSION), headers=settings.header)
@@ -37,12 +39,12 @@ class Login:
         res.close()
         count = 0
         while code != 1:
-            Log.i("等待授权中......")
+            _logger.i("等待授权中......")
             count = count + 1
             time.sleep(5)
             if count == 6:
                 count = 0
-                Log.v("1. 继续等待\n2. 重新生成二维码\n\n0. 返回上一级")
+                _logger.v("1. 继续等待\n2. 重新生成二维码\n\n0. 返回上一级")
                 code_type = input("请输入指令：")
                 if code_type == "1":
                     continue
@@ -57,7 +59,7 @@ class Login:
                                .format(Tool.time(), CDR_VERSION), headers=settings.header)
             code = res.json()["code"]
             res.close()
-        Log.i("授权成功")
+        _logger.i("授权成功")
         os.remove(f"{CONFIG_DIR_PATH}授权二维码.jpg")
         settings.save()
         return
@@ -92,16 +94,16 @@ class Login:
             'Referer': 'https://app.vocabgo.com/',
             'User-Agent': user_agent,
             # TODO 似乎是md5值，回头随机一个测试康康
-            # 'D9886F0A0D37C25B2E9998FEC289C919'
-            'X-DevTools-Emulate-Network-Conditions-Client-Id': Tool.md5(user_agent).upper(),
+            'X-DevTools-Emulate-Network-Conditions-Client-Id': 'D9886F0A0D37C25B2E9998FEC289C919',
+            # 'X-DevTools-Emulate-Network-Conditions-Client-Id': Tool.md5(user_agent).upper(),
             'X-Requested-With': 'XMLHttpRequest'
         }
-        Log.i(f'https://gateway.vocabgo.com/Auth/Thirdpart/Authorize?{data}')
+        _logger.i(f'https://gateway.vocabgo.com/Auth/Thirdpart/Authorize?{data}')
         res = requests.post(url='https://gateway.vocabgo.com/Auth/Thirdpart/Authorize', headers=headers, json=data)
         json_str1 = res.json()
         res.close()
         login_url = json_str1['data']['redirect_url']
-        Log.i("user_token:" + user_token)
+        _logger.i("user_token:" + user_token)
         settings.user_token = user_token
         qr = qrcode.QRCode(
             version=2,
@@ -112,6 +114,7 @@ class Login:
         qr.add_data(login_url)
         qr.make(fit=True)
         img = qr.make_image()
-        Log.i("二维码已生成，将自动展示，请使用微信扫一扫进行词达人授权。成功后请关闭图片查看程序，若失败，用户可在“main目录\\config目录”下找到“授权二维码.jpg”")
+        _logger.i("二维码已生成，将自动展示，请使用微信扫一扫进行词达人授权。成功后请关闭图片查看程序，若失败，用户可在"
+                  "“main目录\\config目录”下找到“授权二维码.jpg”")
         img.save(f"{CONFIG_DIR_PATH}授权二维码.jpg")
         img.show()  # 显示图片

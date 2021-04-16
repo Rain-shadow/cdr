@@ -4,6 +4,7 @@
 # @Time  : 2020-12-19, 0019 15:32
 # @Author: 佚名
 # @File  : core.py
+import asyncio
 import os
 import sys
 import time
@@ -13,6 +14,8 @@ from cdr.config import CDR_VERSION, CONFIG_DIR_PATH
 from cdr.test import ClassTask, MyselfTask
 from cdr.utils import settings, Log, Tool
 from cdr.url import URL
+
+_logger = Log.get_logger()
 
 
 def do_homework():
@@ -37,39 +40,37 @@ def do_homework():
         "sign": sign
     }
     res = requests.post(url='https://gateway.vocabgo.com/Auth/Wechat/Config', headers=settings.header, json=data)
-    Log.i("WechatConfig:")
-    Log.i(res.content.decode("utf8"))
+    _logger.i("WechatConfig:")
+    _logger.i(res.content.decode("utf8"))
     res.close()
     time.sleep(1)
     #   信息显示
     Tool.cls()
+    loop = asyncio.get_event_loop()
     while True:
         if json['user_info'].get('class_name') is None:
-            Log.v(f"\n{json['user_info']['student_name']}（未加入班级）\n")
+            _logger.v(f"\n{json['user_info']['student_name']}（未加入班级）\n")
         else:
-            Log.v(f"\n{json['user_info']['student_name']}（{json['user_info']['class_name']}）\n")
-        Log.v("1.班级任务\n2.自选任务\n3.删除本地授权信息（可更换账号刷题）\n4.打开配置文件（关闭后将自动重载配置文件，记得保存）"
-              "\n\n#.加群1085739587免费获取最新版，更少的BUG、更高的准确率\n\n0.退出\n")
+            _logger.v(f"\n{json['user_info']['student_name']}（{json['user_info']['class_name']}）\n")
+        _logger.v("1.班级任务\n2.自选任务\n3.删除本地授权信息（可更换账号刷题）"
+                  "\n4.打开配置文件（关闭后将自动重载配置文件，记得保存）"
+                  "\n\n#.加群1085739587免费获取最新版，更少的BUG、更高的准确率\n\n0.退出\n")
         settings.save()
         choose = input("请输入序号：")
         if choose == "1":
-            Log.i("正在加载任务列表中，请稍等......")
-            ClassTask().run()
+            _logger.i("正在加载任务列表中，请稍等......")
+            loop.run_until_complete(ClassTask().run())
             Tool.cls()
         elif choose == "2":
-            Log.i("正在加载任务列表中，请稍等......")
+            _logger.i("正在加载任务列表中，请稍等......")
             URL.load_myself_task_list()
-            MyselfTask(json['user_info']['course_id']).run()
+            loop.run_until_complete(MyselfTask(json['user_info']['course_id']).run())
             Tool.cls()
         elif choose == "3":
             settings.user_token = ""
             settings.save()
             Login()
             Tool.cls()
-            res = requests.get("https://gateway.vocabgo.com/Student/Main?timestamp="
-                               f"{Tool.time()}&versions={CDR_VERSION}", headers=settings.header)
-            json = res.json()["data"]
-            res.close()
         elif choose == "4":
             os.system(f'notepad {CONFIG_DIR_PATH + "config.txt"}')
             settings.reload()
@@ -78,7 +79,7 @@ def do_homework():
             sys.exit(0)
         else:
             Tool.cls()
-            Log.i("输入格式有误！\n")
+            _logger.i("输入格式有误！\n")
         res = requests.get("https://gateway.vocabgo.com/Student/Main?timestamp="
                            f"{Tool.time()}&versions={CDR_VERSION}", headers=settings.header)
         json = res.json()["data"]

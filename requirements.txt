@@ -1,3 +1,4 @@
+aiohttp
 asgiref==3.3.1
 certifi==2020.12.5
 chardet==4.0.0
