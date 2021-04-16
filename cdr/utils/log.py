@@ -47,22 +47,23 @@ class Log:
     DEBUG = True
     __ALL_LOGGER = {}
 
-    def __init__(self):
-        self.__content = list(f"线程名称：{threading.currentThread().name}\n")
+    def __init__(self, name):
+        self.__content = list(f"日志名称：{name}\n")
         self.__count = 0
-        Log.__ALL_LOGGER[threading.currentThread().name] = self
+        self.__name = name
+        Log.__ALL_LOGGER[name] = self
 
     @staticmethod
-    def get_logger():
-        if threading.currentThread().name not in Log.__ALL_LOGGER.keys():
-            return Log()
-        return Log.__ALL_LOGGER[threading.currentThread().name]
+    def get_logger(name: str = threading.currentThread().name):
+        if name not in Log.__ALL_LOGGER.keys():
+            return Log(name)
+        return Log.__ALL_LOGGER[name]
 
     def __record_log(self, content, end='\n'):
         self.__content.extend(list(str(content)))
         self.__content.extend(list(end))
         self.__count += 1
-        if threading.current_thread() is threading.main_thread() \
+        if self.__name == threading.main_thread().name \
                 and self.__count >= 10:
             self.close()
 
@@ -98,20 +99,22 @@ class Log:
 
     @staticmethod
     def create_error_txt():
+        Log.close_all_logger()
         _create_error_txt()
 
     @staticmethod
     def close_all_logger():
         for logger in Log.__ALL_LOGGER.values():
             logger.close()
+        Log.__ALL_LOGGER.clear()
 
     def close(self):
         """
         对主线程来说该函数作用仅为更新日志文本
         """
-        if threading.current_thread() is not threading.main_thread():
+        if self.__name != threading.main_thread().name:
             Log.__ALL_LOGGER[threading.main_thread().name].close()  # 优先刷新主线程日志
-            Log.__ALL_LOGGER.pop(threading.currentThread().name)  # 删除自行车日志
+            Log.__ALL_LOGGER.pop(self.__name)  # 删除其他日志
         self.__count = 0
         _log("".join(self.__content))
         self.__content.clear()
