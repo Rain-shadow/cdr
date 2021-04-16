@@ -55,6 +55,7 @@ class Settings(object):
             "isRandomTime": self.is_random_time,
             "isRandomScore": self.is_random_score,
             "isStyleByPercent": self.is_style_by_percent,
+            "multipleTask": self._multiple_task,
             "multipleChapter": self._multiple_chapter,
             "minRandomTime": self.min_random_time,
             "maxRandomTime": self.max_random_time,
