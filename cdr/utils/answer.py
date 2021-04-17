@@ -48,6 +48,9 @@ class Answer:
         vague_answer = adapter.answer_11_1(remark, skip_times, options, answer_list, adapter)
         if vague_answer:
             return vague_answer
+        vague_answer = adapter.answer_11_2(remark, skip_times, options, answer_list, adapter)
+        if vague_answer:
+            return vague_answer
         raise AnswerNotFoundException(11)
 
     # assist_word 时态不确定的单词
@@ -94,12 +97,14 @@ class Answer:
         #   创建一个临时列表
         tem_list = []
         for content in answer["content"]:
-            tem_list.append(content["mean"])
             tem_list.extend(adapter.process_word_mean(content["mean"]))
         tem_set = set(tem_list)
         for mean in options:
             if len(tem_set & set(adapter.process_option_mean(mean["content"]))) != 0:
                 return str(mean["answer_tag"])
+        vague_answer = adapter.answer_15_1(tem_list, options, adapter)
+        if vague_answer:
+            return vague_answer
         raise AnswerNotFoundException(15)
 
     # 18与其处理方式一致
@@ -116,7 +121,7 @@ class Answer:
         if content.find("（") != -1:
             content_list.extend(adapter.process_option_mean(re.sub(r"（.+）", "", content)))
         # 感谢群友104***629提供的错误日志让我意识到了使用了错误的适配函数
-        content_set = Set(content_list)
+        content_set = set(content_list)
         for word in options:
             answer = self._course.find_detail_by_word(word["content"])
             _logger.d(answer)
@@ -125,10 +130,19 @@ class Answer:
             #   创建一个临时列表
             tem_list = []
             for mean in answer["content"]:
-                tem_list.append(mean["mean"])
                 tem_list.extend(adapter.process_word_mean(mean["mean"]))
-            if len(Set(tem_list) & content_set) != 0:
+            if len(set(tem_list) & content_set) != 0:
                 return str(word["answer_tag"])
+        # 模糊匹配
+        answer_dict = {}
+        for word in options:
+            answer = self._course.find_detail_by_word(word["content"])
+            _logger.d(answer)
+            if answer:  # 选项中可能存在不在课程中的单词，故查询结果可能为空
+                answer_dict[word["content"]] = answer
+        vague_answer = adapter.answer_17_1(content_list, options, answer_dict, adapter)
+        if vague_answer:
+            return vague_answer
         raise AnswerNotFoundException(17)
 
     # 无需兼容，本身即可得出答案，最让人安心的一个

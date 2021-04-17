@@ -81,6 +81,27 @@ class AnswerAdapter:
                 return result
 
     # 无则返回None
+    def answer_11_2(self, remark, skip_times, options: list, answer_list: list, adapter) -> str:
+        for cls in self.__interfaces:
+            result = cls.answer_11_2(remark, skip_times, options, answer_list, adapter)
+            if result:
+                return result
+
+    # 无则返回None
+    def answer_15_1(self, answer_list: list, options: list, adapter) -> str:
+        for cls in self.__interfaces:
+            result = cls.answer_15_1(answer_list, options, answer_list, adapter)
+            if result:
+                return result
+
+    # 无则返回None
+    def answer_17_1(self, content_list: list, options: list, answer_list: list, adapter) -> str:
+        for cls in self.__interfaces:
+            result = cls.answer_17_1(content_list, options, answer_list, adapter)
+            if result:
+                return result
+
+    # 无则返回None
     def answer_32_1(self, options: list, usage: list) -> str:
         for cls in self.__interfaces:
             result = cls.answer_32_1(options, usage)

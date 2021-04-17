@@ -49,8 +49,27 @@ class IOrigin:
         return usage
 
     # 处理题型11中精确匹配失败的情况
+    # 为例句翻译添加模糊匹配
     @staticmethod
-    def answer_11_1(remark, skip_times, options: list, answer_list: list, adapter) -> str:
+    def answer_11_1(remark: str, skip_times: int, options: list, answer_list: list, adapter) -> str:
+        pass
+
+    # 处理题型11中精确匹配失败的情况
+    # 为选项翻译添加模糊匹配
+    @staticmethod
+    def answer_11_2(remark: str, skip_times: int, options: list, answer_list: list, adapter) -> str:
+        pass
+
+    # 处理题型15中精确匹配失败的情况
+    # 为选项翻译添加模糊匹配
+    @staticmethod
+    def answer_15_1(answer_list: list, options: list, adapter) -> str:
+        pass
+
+    # 处理题型17中精确匹配失败的情况
+    # 为选项翻译添加模糊匹配
+    @staticmethod
+    def answer_17_1(content_list: list, options: list, answer_dict: dict, adapter) -> str:
         pass
 
     # 处理题型32中一个选项中包含多个单词的情况
@@ -124,15 +143,51 @@ class AnswerPattern1(IOrigin):
     def answer_11_1(remark, skip_times, options: list, answer_list: list, adapter) -> str:
         for answer in answer_list:
             for content in answer["content"]:
-                if content["example"].get(remark) or adapter.example_get_remark(content["example"], remark):
+                for key in content["example"].keys():
+                    if Tool.get_ratio_between_str(key, remark) < 0.75:
+                        continue
                     for mean in options:
                         tem_list = adapter.process_option_mean(mean["content"])
                         # 若选项集合与题库集合的相似度超过3/4，则该选项有可能等于题库中的选项
-                        if Tool.get_ratio_between_list(tem_list, adapter.process_word_mean(content["mean"])) >= 0.75:
+                        if len(set(tem_list) & set(adapter.process_word_mean(content["mean"]))) != 0:
                             if skip_times != 0:
                                 skip_times -= 1
                                 continue
                             return str(mean["answer_tag"])
+
+    @staticmethod
+    def answer_11_2(remark, skip_times, options: list, answer_list: list, adapter) -> str:
+        for answer in answer_list:
+            for content in answer["content"]:
+                if content["example"].get(remark) or adapter.example_get_remark(content["example"], remark):
+                    for mean in options:
+                        tem_list = adapter.process_option_mean(mean["content"])
+                        # 若选项集合与题库集合的相似度超过3/4，则该选项有可能等于题库中的选项
+                        if Tool.get_ratio_between_list(tem_list, adapter.process_word_mean(content["mean"])) >= 0.7:
+                            if skip_times != 0:
+                                skip_times -= 1
+                                continue
+                            return str(mean["answer_tag"])
+
+    @staticmethod
+    def answer_15_1(answer_list: list, options: list, adapter) -> str:
+        for mean in options:
+            if Tool.get_ratio_between_list(adapter.process_option_mean(mean["content"]),
+                                           answer_list) >= 0.9:
+                return str(mean["answer_tag"])
+
+    @staticmethod
+    def answer_17_1(content_list, options: list, answer_dict: dict, adapter) -> str:
+        for word in options:
+            answer = answer_dict.get(word["content"])
+            if answer is None:  # 选项中可能存在不在课程中的单词，故查询结果可能为空
+                continue
+            #   创建一个临时列表
+            tem_list = []
+            for mean in answer["content"]:
+                tem_list.extend(adapter.process_word_mean(mean["mean"]))
+            if Tool.get_ratio_between_list(tem_list, content_list) >= 0.8:
+                return str(word["answer_tag"])
 
     @staticmethod
     def answer_32_1(options: list, usage: list) -> str:

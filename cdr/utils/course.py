@@ -22,7 +22,7 @@ debug_word = None
 
 
 class Course:
-    DATA_VERSION = 11
+    DATA_VERSION = 12
 
     def __init__(self, course_id):
         self.id = course_id
