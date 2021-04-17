@@ -5,7 +5,7 @@
 *.ipr
 
 ### CDR ###
-venv/
+venv*/
 __pycache__/
 build/*
 config/*
