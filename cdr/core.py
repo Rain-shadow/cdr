@@ -9,6 +9,7 @@ import os
 import sys
 import time
 import cdr.request as requests
+import cdr.aio.aiorequset as aiorequset
 from .login import Login
 from cdr.config import CDR_VERSION, CONFIG_DIR_PATH
 from cdr.test import ClassTask, MyselfTask
@@ -76,6 +77,7 @@ def do_homework():
             settings.reload()
             Tool.cls()
         elif choose == "0":
+            aiorequset.close_session()
             sys.exit(0)
         else:
             Tool.cls()
