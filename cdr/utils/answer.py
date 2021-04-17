@@ -45,6 +45,9 @@ class Answer:
                                 skip_times -= 1
                                 continue
                             return str(mean["answer_tag"])
+        vague_answer = adapter.answer_11_1(remark, skip_times, options, answer_list, adapter)
+        if vague_answer:
+            return vague_answer
         raise AnswerNotFoundException(11)
 
     # assist_word 时态不确定的单词
@@ -93,8 +96,9 @@ class Answer:
         for content in answer["content"]:
             tem_list.append(content["mean"])
             tem_list.extend(adapter.process_word_mean(content["mean"]))
+        tem_set = set(tem_list)
         for mean in options:
-            if len(Set(tem_list) & Set(adapter.process_option_mean(mean["content"]))) != 0:
+            if len(tem_set & set(adapter.process_option_mean(mean["content"]))) != 0:
                 return str(mean["answer_tag"])
         raise AnswerNotFoundException(15)
 
@@ -258,11 +262,11 @@ class Answer:
         usage_list = adapter.process_option_usage(content).split(" ")
         usage_list_set = Set(usage_list)
         _logger.d(usage_list)
-        remark_set = Set(adapter.process_option_mean(remark))
+        remark_set = set(adapter.process_option_mean(remark))
         for key, value in self._course.data.items():
             if len(usage_list) == 1:
                 for i in value["content"]:
-                    if len(remark_set & Set(adapter.process_word_mean(i["mean"]))) != 0:
+                    if len(remark_set & set(adapter.process_word_mean(i["mean"]))) != 0:
                         if skip_times != 0:
                             skip_times -= 1
                             continue

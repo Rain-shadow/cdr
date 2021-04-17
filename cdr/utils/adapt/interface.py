@@ -46,6 +46,11 @@ class IOrigin:
     def process_option_usage(usage: str) -> str:
         return usage
 
+    # 处理题型11中精确匹配失败的情况
+    @staticmethod
+    def answer_11_1(remark, skip_times, options: list, answer_list: list, adapter) -> str:
+        pass
+
     # 处理题型32中一个选项中包含多个单词的情况
     @staticmethod
     def answer_32_1(options: list, usage: list) -> str:
@@ -100,13 +105,28 @@ class AnswerPattern1(IOrigin):
 
     @staticmethod
     def process_option_usage(usage: str) -> str:
-        #去汉字
+        # 去汉字
         re.sub(r"[\u4E00-\u9FA5]", "", usage)
-        #去除ZZ的图标字符串
+        # 去除ZZ的图标字符串
         tem = re.sub(r"\\[uU][eE][0-9a-fA-F]{3}", "", usage.encode('unicode-escape').decode("utf-8"))\
             .encode('utf-8').decode("unicode-escape")
         tem = tem.replace('.', ' ').replace("…", " ").replace("-", " ").replace(",", " ").replace("\n", "").strip()
         return " ".join(tem.split())
+
+    # 模糊匹配
+    @staticmethod
+    def answer_11_1(remark, skip_times, options: list, answer_list: list, adapter) -> str:
+        for answer in answer_list:
+            for content in answer["content"]:
+                if content["example"].get(remark) or adapter.example_get_remark(content["example"], remark):
+                    for mean in options:
+                        tem_list = adapter.process_option_mean(mean["content"])
+                        # 若选项集合与题库集合的相似度超过3/4，则该选项有可能等于题库中的选项
+                        if Tool.get_ratio_between_list(tem_list, adapter.process_word_mean(content["mean"])) >= 0.75:
+                            if skip_times != 0:
+                                skip_times -= 1
+                                continue
+                            return str(mean["answer_tag"])
 
     @staticmethod
     def answer_32_1(options: list, usage: list) -> str:
@@ -197,3 +217,20 @@ class AnswerPattern6(IOrigin):
         # 去除多余的中文括号
         tem = re.sub(r"([A-Za-z\s]+)?(（?(?:(?!（).)+）)", r"\1", mean)
         return [tem, Tool.sort_str(tem)]
+
+
+# 21.4.17修复由群友148***020提交的BUG
+# 处理多余空格并乱序
+class AnswerPattern7(IOrigin):
+
+    @staticmethod
+    def process_option_mean(mean: str) -> list:
+        # 移除所有空格并排序
+        print(Tool.sort_str(re.sub(r"\s+", "", mean)))
+        return [Tool.sort_str(re.sub(r"\s+", "", mean))]
+
+    @staticmethod
+    def process_word_mean(mean: str) -> list:
+        # 移除所有空格并排序
+        print(Tool.sort_str(re.sub(r"\s+", "", mean)))
+        return [Tool.sort_str(re.sub(r"\s+", "", mean))]

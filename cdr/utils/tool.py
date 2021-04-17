@@ -36,6 +36,15 @@ class Tool:
         return difflib.SequenceMatcher(None, str_a, str_b).quick_ratio()
 
     @staticmethod
+    def get_ratio_between_list(list_a: list, list_b: list) -> float:
+        max_ratio = 0.0
+        for a in list_a:
+            for b in list_b:
+                tem_ratio = difflib.SequenceMatcher(None, a, b).quick_ratio()
+                max_ratio = tem_ratio if tem_ratio > max_ratio else max_ratio
+        return max_ratio
+
+    @staticmethod
     def is_str_in_list_by_some_difference(content: str, aim: list) -> bool:
         ratio = 0.0
         for item in aim:
