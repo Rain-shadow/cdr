@@ -113,9 +113,9 @@ class Settings(object):
                 "isRandomScore: 是否开启控分选项，实际成绩总是略高于目标分数，但不超过100。取值[true/false]",
                 "isStyleByPercent: 在多任务中是否让进度条以百分比显示，对于任务量较重的建议关闭，将以具体数量显示。取值[true/false]",
                 "multipleTask: 同时进行的任务数量，最低为1，最大为30，若格式错误将重置为1，相当于用几支笔做罚抄作业",
-                "警告！该功能为实验性功能，或许会存在未知BUG！请谨慎开启！",
+                "该功能为实验性功能，暂时封禁，以后更新",
                 "multipleChapter: 同时进行的测试数量，最低为1，最大为6，若格式错误将重置为1，相当于同时做几门作业",
-                "警告！虽在个人测试中未有封号现象，但无法保证该现象为普遍现象，更无法保证以后也如此，请谨慎开启！",
+                "警告！该功能为实验性功能，或许会存在未知BUG！请谨慎开启！",
                 "maxRandomTime: 最大随机时间，其值不得小于minRandomTime，单位：秒",
                 "minRandomTime: 最小随机时间，其值不得大于maxRandomTime，单位：秒",
                 "最大时间不得大于35，否则设置无法生效，将使用每个题型的最大时间",
@@ -217,7 +217,8 @@ class Settings(object):
         if not isinstance(value, int):
             self._multiple_task = 1
         else:
-            if value > 30 or value < 1:
+            # TODO 暂时禁用
+            if value > 1 or value < 1:
                 self._multiple_task = 1
             else:
                 self._multiple_task = value
