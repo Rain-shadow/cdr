@@ -228,8 +228,15 @@ class Course:
         data = {
             "course_id": course_id,
             "list_id": list_id,
-            "word": word
-         }
+            "word": word,
+            "timestamp": Tool.time(),
+            "versions": CDR_VERSION
+        }
+        (await requests.options(
+            url='https://gateway.vocabgo.com/Student/Course/StudyWordInfo',
+            params=data,
+            headers=_settings.header,
+            timeout=timeout)).close()
         res = await requests.get(
             url='https://gateway.vocabgo.com/Student/Course/StudyWordInfo',
             params=data,
