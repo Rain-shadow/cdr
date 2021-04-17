@@ -25,6 +25,7 @@ class CDRTask:
         self.__course_map = {}
         self._courses_set = set()
         self._tasks = Tasks(max_async=settings.multiple_chapter)
+        self._lock = asyncio.Lock()
 
     def add_progress(self, key: str, title: str, total: int):
         tail = "%"
@@ -60,7 +61,7 @@ class CDRTask:
         return self.__course_map
 
     async def find_answer_and_finish(self, answer: Answer, data: dict, type_id: int, task_id: int) -> dict:
-        is_show = not settings.is_multiple_task
+        is_show = not settings.is_multiple_chapter
         type_mode = ["StudyTask", "ClassTask"]
         content = data["stem"]["content"]
         remark = data["stem"]["remark"]
@@ -132,10 +133,10 @@ class CDRTask:
         if json_data["code"] == 21006:
             await self.verify_human(task_id)
             data["timestamp"] = Tool.time()
-            res = requests.post(
+            res = await requests.post(
                 url='https://gateway.vocabgo.com/Student/' + type_mode[type_id] + '/SubmitAnswerAndSave',
                 json=data, headers=settings.header, timeout=settings.timeout)
-            json_data = res.json()
+            json_data = await res.json()
             res.close()
         #  请求模拟
         # requests.post(
@@ -255,32 +256,15 @@ class CDRTask:
             raise AnswerWrong(data, json_data['data']['topic_code'], json_data['data']["over_status"] != 1)
         return json_data['data']['topic_code'], json_data['data']["over_status"] != 1
 
-    @staticmethod
-    async def verify_human(task_id: int, check_type: str = "answer"):
-        data = {
-            "check_type": check_type,
-            "task_id": task_id,
-            "versions": CDR_VERSION,
-        }
-        while True:
-            data["timestamp"] = Tool.time()
-            res = await requests.get("https://gateway.vocabgo.com/Student/Captcha/Get",
-                                     params=data, headers=settings.header, timeout=settings.timeout)
-            json_data = await res.json()
-            res.close()
-            if json_data["code"] == 0 and json_data["msg"] == "无需验证":
-                return
-            elif json_data["code"] == 0:
-                _logger.w(json_data["msg"])
-                _logger.w("词达人验证服务器暂时崩溃，请稍后再试")
-                input()
-            _logger.i("验证码即将展示，若看不清可输入-1重新生成")
-            from cdr.utils import VerificationCode
-            code = VerificationCode.get_vc(json_data["data"]["original_image"], task_id)
-            _logger.v(code)
-            while code == "-1":
-                import os
-                os.remove(f"{CONFIG_DIR_PATH}验证码-{task_id}.png")
+    async def verify_human(self, task_id: int, check_type: str = "answer"):
+        async with self._lock:
+            data = {
+                "check_type": check_type,
+                "task_id": task_id,
+                "versions": CDR_VERSION,
+            }
+            while True:
+                data["timestamp"] = Tool.time()
                 res = await requests.get("https://gateway.vocabgo.com/Student/Captcha/Get",
                                          params=data, headers=settings.header, timeout=settings.timeout)
                 json_data = await res.json()
@@ -288,33 +272,46 @@ class CDRTask:
                 if json_data["code"] == 0 and json_data["msg"] == "无需验证":
                     return
                 elif json_data["code"] == 0:
-                    _logger.v("")
                     _logger.w(json_data["msg"])
                     _logger.w("词达人验证服务器暂时崩溃，请稍后再试")
-                    input("按回车重新尝试生成验证码")
-                    continue
+                    input()
                 _logger.i("验证码即将展示，若看不清可输入-1重新生成")
-                code = VerificationCode.get_vc(json_data["data"]["original_image"], task_id)
-            timestamp = Tool.time()
-            sign = Tool.md5(f"captcha_code={code}&task_id={task_id}&timestamp={timestamp}&versions={CDR_VERSION}"
-                            "ajfajfamsnfaflfasakljdlalkflak")
-            data = {
-                "captcha_code": code,
-                "sign": sign,
-                "task_id": task_id,
-                "timestamp": timestamp,
-                "versions": CDR_VERSION
-            }
-            res = await requests.post("https://gateway.vocabgo.com/Student/Captcha/Check",
-                                      json=data, headers=settings.header)
-            flag = (await res.json())["code"]
-            res.close()
-            if flag != 1:
-                _logger.i("验证码核验错误，将重新生成验证码")
-            else:
-                import os
-                os.remove(f"{CONFIG_DIR_PATH}验证码-{task_id}.png")
-                break
+                from cdr.utils import VerificationCode
+                code = await VerificationCode.get_vc(json_data["data"]["original_image"], task_id)
+                _logger.v(code)
+                while code == "-1":
+                    import os
+                    os.remove(f"{CONFIG_DIR_PATH}验证码-{task_id}.png")
+                    res = await requests.get("https://gateway.vocabgo.com/Student/Captcha/Get",
+                                             params=data, headers=settings.header, timeout=settings.timeout)
+                    json_data = await res.json()
+                    res.close()
+                    if json_data["code"] == 0 and json_data["msg"] == "无需验证":
+                        return
+                    elif json_data["code"] == 0:
+                        _logger.v("")
+                        _logger.w(json_data["msg"])
+                        _logger.w("词达人验证服务器暂时崩溃，请稍后再试")
+                        input("按回车重新尝试生成验证码")
+                        continue
+                    _logger.i("验证码即将展示，若看不清可输入-1重新生成")
+                    code = await VerificationCode.get_vc(json_data["data"]["original_image"], task_id)
+                timestamp = Tool.time()
+                sign = Tool.md5(f"captcha_code={code}&task_id={task_id}&timestamp={timestamp}&versions={CDR_VERSION}"
+                                "ajfajfamsnfaflfasakljdlalkflak")
+                data = {
+                    "captcha_code": code,
+                    "sign": sign,
+                    "task_id": task_id,
+                    "timestamp": timestamp,
+                    "versions": CDR_VERSION
+                }
+                res = await requests.post("https://gateway.vocabgo.com/Student/Captcha/Check",
+                                          json=data, headers=settings.header)
+                flag = (await res.json())["code"]
+                res.close()
+                if flag != 1:
+                    _logger.i("验证码核验错误，将重新生成验证码")
 
     @staticmethod
     async def skip_answer(topic_code: str, topic_mode: int, type_mode: str) -> dict:

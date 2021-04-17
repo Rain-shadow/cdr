@@ -10,6 +10,7 @@ import re
 import os
 from cdr.aio import aiorequset as requests
 from cdr.exception import NoPermission
+from cdr.utils import Set
 from .setting import _settings
 from .log import Log
 from .tool import Tool
@@ -17,10 +18,11 @@ from cdr.config import CDR_VERSION, DATA_DIR_PATH
 
 _settings = _settings
 _logger = Log.get_logger()
+debug_word = None
 
 
 class Course:
-    DATA_VERSION = 10
+    DATA_VERSION = 11
 
     def __init__(self, course_id):
         self.id = course_id
@@ -43,7 +45,7 @@ class Course:
         self._fail_list = {}
 
     async def load_word(self):
-        is_show = not _settings.is_multiple_task
+        is_show = not _settings.is_multiple_chapter
         if self._load_local_answer():
             return
         _logger.i("从网络装载题库中......(10s-30s)", is_show=is_show)
@@ -124,14 +126,14 @@ class Course:
         return list_id, word_list
 
     async def _get_word_info_and_dispose(self, list_id: str, word: str, is_second: bool = False):
-        answer = None
         try:
             answer = await self.get_detail_by_word(self.id, list_id, word)
         except NoPermission:
             _logger.i(f"[{self.id}/{list_id}]疑似vip课程章节，无权访问，跳过该章节答案加载，本次不会缓存本地词库")
             self.is_success = False
             return
-        except Exception:
+        except Exception as e:
+            print(e)
             if not is_second:
                 _logger.w(f"警告！单词：{word}({self.id}/{list_id})加载失败，稍后软件将会尝试二次加载")
             else:
@@ -141,6 +143,7 @@ class Course:
                 self._fail_list[list_id] = [word]
             else:
                 self._fail_list[list_id].append(word)
+            return
         else:
             if is_second:
                 _logger.d(f"单词：{word}二次加载成功！")
@@ -153,15 +156,26 @@ class Course:
             for index, item in enumerate(self.data[word]["content"]):
                 tem_map[item["mean"]] = index
             for item in answer["content"]:
-                if tem_map.get(item["mean"]) is None:
+                mean = tem_map.get(item["mean"])
+                if mean is None:
                     self.data[word]["content"].append(item)
                 else:
-                    tem_data = self.data[word]["content"][tem_map[item["mean"]]]
+                    tem_data = self.data[word]["content"][mean]
                     for key in item["usage"]:
                         if tem_data["usage"].get(key) is None:
                             tem_data["usage"][key] = item["usage"][key]
                         else:
-                            tem_data["usage"][key].extend(item["usage"][key])
+                            tem_list = []
+                            for item_usage in item["usage"][key]:
+                                has_repetition = False
+                                item_usage_set = Set(item_usage)
+                                for usage in tem_data["usage"][key]:
+                                    if len(Set(usage) & item_usage_set) == len(usage):
+                                        has_repetition = True
+                                        break
+                                if not has_repetition:
+                                    tem_list.append(item_usage)
+                            tem_data["usage"][key].extend(tem_list)
                     for key in item["example"]:
                         if tem_data["example"].get(key) is None:
                             tem_data["example"][key] = item["example"][key]
@@ -223,6 +237,8 @@ class Course:
             timeout=timeout)
 
         data = await res.json()
+        if word == debug_word:
+            print(data)
         if data["code"] == 0 and data["msg"] == "没有权限":
             raise NoPermission(data["msg"])
         data = data["data"]
@@ -269,6 +285,7 @@ class Course:
                 tem_str = matcher.group(2).strip()
                 if usage_repeat_mean_pattern.fullmatch(tem_str) is not None:
                     tem_str = usage_repeat_mean_pattern.match(tem_str).group(1)
+                # tem_str = " ".join(tem_str.split())
                 #   因不同短语可能具有相同的翻译，需做额外处理
                 if answer["content"][i]["usage"].get(tem_str) is None:
                     answer["content"][i]["usage"][tem_str] = []

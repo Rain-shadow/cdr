@@ -4,15 +4,14 @@
 # @Time  : 2020-12-27, 0027 13:10
 # @Author: 佚名
 # @File  : class_task.py
+import asyncio
 import json
 import gc
 import re
-import time
 from cdr.aio import aiorequset as requests
 
 from .cdr_task import CDRTask
 from cdr.utils import settings, Answer, Course, Log, Tool
-from cdr.thread import CustomThread
 from cdr.config import CDR_VERSION, CONFIG_DIR_PATH
 from cdr.exception import NoPermission
 
@@ -40,6 +39,7 @@ class ClassTask(CDRTask):
                     time_stamp += task['over_time']
                 time_stamp /= 1000
                 _logger.i(time_stamp, is_show=False)
+                import time
                 format_time = time.strftime("%m{m}%d{d} %H:%M:%S", time.localtime(time_stamp)).format(m="月", d="号")
                 _logger.i(format_time, is_show=False)
                 _logger.v(f"{i + 1:2d}. [{task_type_list[task['task_type']]}]"
@@ -89,7 +89,7 @@ class ClassTask(CDRTask):
     async def do_task(self, task, course_id, course):
         time_out = settings.timeout
         is_random_score = settings.is_random_score
-        is_show = not settings.is_multiple_task
+        is_show = not settings.is_multiple_chapter
         if task['over_status'] == 2:
             task_id = task["task_id"]
             task_type = task["task_type"]
@@ -111,7 +111,7 @@ class ClassTask(CDRTask):
                     _logger.i("班级-学习任务", is_show=is_show)
                     # 处理taskId为-1的情况
                     task_id = await ClassTask.get_task_id(task_id, release_id)
-                    time.sleep(1)
+                    await asyncio.sleep(1)
                 data = {
                     "task_id": task_id,
                     "task_type": task_type,
@@ -159,7 +159,7 @@ class ClassTask(CDRTask):
                                                  headers=settings.header, params=data, timeout=time_out)
                         json_data = await res.json()
                         res.close()
-                    time.sleep(1)
+                    await asyncio.sleep(1)
                     if json_data["code"] == 0 and json_data["msg"] is not None \
                             and json_data["msg"].find("返回首页") != -1:
                         _logger.i("任务信息加载失败，返回上一级重选任务即可", is_show=is_show)
@@ -173,12 +173,12 @@ class ClassTask(CDRTask):
                 else:
                     _logger.i("班级-测试任务", is_show=is_show)
                     # 开始任务包
-                    time.sleep(1)
+                    await asyncio.sleep(1)
                 _logger.i("开始答题\n", is_show=is_show)
                 if json_data["code"] == 0:
                     _logger.i(json_data["msg"], is_show=is_show)
                     return
-                if settings.is_multiple_task:
+                if settings.is_multiple_chapter:
                     _logger.i(json_data, is_show=False)
                     self.add_progress(str(release_id), task['task_name'], json_data['data']['topic_total'])
                     self.update_progress(str(release_id), 0)
@@ -187,7 +187,7 @@ class ClassTask(CDRTask):
                 #   code=20001需要选词，学习任务完成标志
                 while json_data["code"] != 20004 and json_data["code"] != 20001 and \
                         json_data["data"]["topic_done_num"] <= json_data["data"]["topic_total"]:
-                    if settings.is_multiple_task:
+                    if settings.is_multiple_chapter:
                         self.update_progress(str(release_id), json_data["data"]["topic_done_num"])
                     json_data = await self.do_question(answer, json_data, release_id, now_score, task_id)
                 if is_show:
@@ -200,7 +200,6 @@ class ClassTask(CDRTask):
                     break
         else:
             _logger.i(f"该【{task['task_name']}】任务未开始")
-        self.thread_count -= 1
 
     @staticmethod
     async def get_task_list():
@@ -229,10 +228,10 @@ class ClassTask(CDRTask):
                 flag = False
             else:
                 # 模拟预请求
-                await requests.options(
+                (await requests.options(
                     url=f'https://gateway.vocabgo.com/Student/ClassTask/List?page_count={count:d}&page_size=20'
                     f'&timestamp={Tool.time()}&versions={CDR_VERSION}', headers=settings.header, timeout=time_out
-                ).close()
+                )).close()
                 response = await requests.get(
                     url=f'https://gateway.vocabgo.com/Student/ClassTask/List?page_count={count:d}&page_size=20'
                     f'&timestamp={Tool.time()}&versions={CDR_VERSION}', headers=settings.header, timeout=time_out
@@ -259,7 +258,7 @@ class ClassTask(CDRTask):
 
     @staticmethod
     async def choose_word(course_id: str, task_id: int, task_type: int) -> bool:
-        is_show = not settings.is_multiple_task
+        is_show = not settings.is_multiple_chapter
         time_out = settings.timeout
         _logger.i("需要选词", is_show=is_show)
         res = await requests.get(
@@ -320,7 +319,7 @@ class ClassTask(CDRTask):
 
     @staticmethod
     async def skip_learn_task(topic_code: str):
-        is_show = not settings.is_multiple_task
+        is_show = not settings.is_multiple_chapter
         #   模拟加载流程
         _logger.i("正在跳过学习任务的学习阶段", is_show=is_show)
         timestamp = Tool.time()
@@ -339,7 +338,7 @@ class ClassTask(CDRTask):
             json=data, headers=settings.header, timeout=settings.timeout)
         json_data = await res.json()
         res.close()
-        time.sleep(1)
+        await asyncio.sleep(1)
         #   流程模拟结束
         timestamp = Tool.time()
         sign = Tool.md5(f"timestamp={timestamp}&topic_code={json_data['data']['topic_code']}"
@@ -359,9 +358,9 @@ class ClassTask(CDRTask):
 
     @staticmethod
     async def get_class_task_score(release_id):
-        await requests.options(
+        (await requests.options(
             url='https://gateway.vocabgo.com/Student/ClassTask/List?page_count=1&page_size=10&timestamp='
-                + f'{Tool.time()}&versions={CDR_VERSION}', headers=settings.header, timeout=settings.timeout).close()
+                + f'{Tool.time()}&versions={CDR_VERSION}', headers=settings.header, timeout=settings.timeout)).close()
         res = await requests.get(
             url='https://gateway.vocabgo.com/Student/ClassTask/List?page_count=1&page_size=100&timestamp='
                 + f'{Tool.time()}&versions={CDR_VERSION}', headers=settings.header, timeout=settings.timeout)
@@ -373,15 +372,15 @@ class ClassTask(CDRTask):
         return 0
 
     async def do_question(self, answer: Answer, json_data: dict, release_id, now_score, task_id: int) -> dict:
-        is_show = not settings.is_multiple_task
+        is_show = not settings.is_multiple_chapter
         _logger.i(str(json_data["data"]["topic_done_num"])
                   + "/" + str(json_data["data"]["topic_total"]) + ".", end='', is_show=is_show)
         if now_score != 100 and 100.0 * json_data["data"]["topic_done_num"] / \
                 json_data["data"]["topic_total"] + 5 >= now_score:
             if not settings.is_random_time:
-                time.sleep(0.1)
+                await asyncio.sleep(0.1)
             else:
-                time.sleep(2)
+                await asyncio.sleep(2)
             if await ClassTask.get_class_task_score(release_id) >= now_score:
                 _logger.i(f"[mode:{json_data['data']['topic_mode']}]{json_data['data']['stem']['content']}"
                           + "   已达本次既定分数，超时本题！", is_show=is_show)

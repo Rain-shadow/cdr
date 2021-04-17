@@ -9,6 +9,7 @@ import threading
 import sys
 from requests import ReadTimeout
 from requests.exceptions import ProxyError, ConnectionError
+from aiohttp.client_exceptions import ServerDisconnectedError
 from urllib3.exceptions import NewConnectionError, MaxRetryError
 
 from cdr.aio import aiorequset
@@ -34,11 +35,14 @@ def __my_except_hook(exc_type, exc_value, tb):
     _logger.v("")
     _logger.e(msg, is_show=False)
     aiorequset.close_session()
-    if exc_type == ReadTimeout or exc_type == ProxyError or exc_type == ConnectionError or exc_type == ConnectionError \
-            or exc_type == NewConnectionError or exc_type == MaxRetryError:
+    network_error = (ReadTimeout, ProxyError, ConnectionError, ConnectionError, NewConnectionError, MaxRetryError,
+                     ServerDisconnectedError)
+    if isinstance(exc_value, network_error):
         _logger.e("网络不稳定，请待网路恢复后重启程序")
+    elif exc_type == ValueError and str(exc_value) == "check_hostname requires server_hostname":
+        _logger.e("该软件无法在全局代理开启的情况下运行！")
     elif exc_type == KeyboardInterrupt:
-        _logger.i("你主动中断了程序的运行")
+        _logger.i("AWSL")
     elif exc_type == NetworkError:
         _logger.e(f"词达人自己崩了！{exc_value.msg}")
         _logger.create_error_txt()

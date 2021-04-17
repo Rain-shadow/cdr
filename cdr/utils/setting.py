@@ -205,8 +205,8 @@ class Settings(object):
             self._is_style_by_percent = True
 
     @property
-    def is_multiple_task(self) -> bool:
-        return self.multiple_task != 1
+    def is_multiple_chapter(self) -> bool:
+        return self.multiple_chapter != 1
 
     @property
     def multiple_task(self):

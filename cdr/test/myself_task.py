@@ -4,9 +4,9 @@
 # @Time  : 2020-12-27, 0027 14:49
 # @Author: 佚名
 # @File  : myself_task.py
+import asyncio
 import json
 import gc
-import time
 from cdr.aio import aiorequset as requests
 
 from cdr.config import CDR_VERSION, CONFIG_DIR_PATH
@@ -69,7 +69,7 @@ class MyselfTask(CDRTask):
         URL.load_task_detail()
         time_out = settings.timeout
         is_random_score = settings.is_random_score
-        is_show = not settings.is_multiple_task
+        is_show = not settings.is_multiple_chapter
         if task["score"] != 100:
             task_id = task["task_id"]
             now_score = CDRTask.get_random_score(is_open=is_random_score)
@@ -105,7 +105,7 @@ class MyselfTask(CDRTask):
                     json_data = await res.json()
                 task_id = json_data["data"]["task_id"] or -1
                 grade = json_data["data"]["grade"]
-                time.sleep(1)
+                await asyncio.sleep(1)
                 data = {
                     "task_id": task_id,
                     "task_type": task['task_type'],
@@ -145,7 +145,7 @@ class MyselfTask(CDRTask):
                                          headers=settings.header, params=data, timeout=time_out)
                 json_data = await res.json()
                 res.close()
-                time.sleep(1)
+                await asyncio.sleep(1)
                 if json_data["code"] == 0 and json_data["msg"] is not None \
                         and json_data["msg"].find("返回首页") != -1:
                     _logger.i("任务信息加载失败，返回上一级重选任务即可", is_show=is_show)
@@ -160,7 +160,7 @@ class MyselfTask(CDRTask):
                 if json_data["code"] == 0:
                     _logger.i(json_data["msg"], is_show=is_show)
                     return
-                if settings.is_multiple_task:
+                if settings.is_multiple_chapter:
                     _logger.i(json_data, is_show=False)
                     self.add_progress(task['list_id'], task['task_name'], json_data['data']['topic_total'])
                     self.update_progress(task['list_id'], 0)
@@ -169,7 +169,7 @@ class MyselfTask(CDRTask):
                 #   code=20001需要选词，学习任务完成标志
                 while json_data["code"] != 20004 and json_data["code"] != 20001 and \
                         json_data["data"]["topic_done_num"] <= json_data["data"]["topic_total"]:
-                    if settings.is_multiple_task:
+                    if settings.is_multiple_chapter:
                         self.update_progress(task['list_id'], json_data["data"]["topic_done_num"])
                     json_data = await self.do_question(answer, json_data, course_id,
                                                        task['list_id'], now_score, task_id)
@@ -219,7 +219,7 @@ class MyselfTask(CDRTask):
     @staticmethod
     async def choose_word(task: dict, task_id: int, grade: int) -> bool:
         URL.load_choose_word()
-        is_show = not settings.is_multiple_task
+        is_show = not settings.is_multiple_chapter
         time_out = settings.timeout
         _logger.i("需要选词", is_show=is_show)
         res = await requests.get(
@@ -279,7 +279,7 @@ class MyselfTask(CDRTask):
 
     @staticmethod
     async def skip_learn_task(topic_code: str):
-        is_show = not settings.is_multiple_task
+        is_show = not settings.is_multiple_chapter
         #   模拟加载流程
         _logger.i("正在跳过学习任务的学习阶段", is_show=is_show)
         timestamp = Tool.time()
@@ -298,7 +298,7 @@ class MyselfTask(CDRTask):
             json=data, headers=settings.header, timeout=settings.timeout)
         json_data = await res.json()
         res.close()
-        time.sleep(1)
+        await asyncio.sleep(1)
         #   流程模拟结束
         timestamp = Tool.time()
         sign = Tool.md5(f"timestamp={timestamp}&topic_code={json_data['data']['topic_code']}"
@@ -332,15 +332,15 @@ class MyselfTask(CDRTask):
         return 0
 
     async def do_question(self, answer: Answer, json_data: dict, course_id, list_id, now_score, task_id: int) -> dict:
-        is_show = not settings.is_multiple_task
+        is_show = not settings.is_multiple_chapter
         _logger.i(str(json_data["data"]["topic_done_num"])
                   + "/" + str(json_data["data"]["topic_total"]) + ".", end='', is_show=is_show)
         if now_score != 100 and 100.0 * json_data["data"]["topic_done_num"] / \
                 json_data["data"]["topic_total"] + 5 >= now_score:
             if not settings.is_random_time:
-                time.sleep(0.1)
+                await asyncio.sleep(0.1)
             else:
-                time.sleep(2)
+                await asyncio.sleep(2)
             if await MyselfTask.get_myself_task_score(course_id, list_id) >= now_score:
                 _logger.i(f"[mode:{json_data['data']['topic_mode']}]{json_data['data']['stem']['content']}"
                           + "   已达本次既定分数，超时本题！", is_show=is_show)
