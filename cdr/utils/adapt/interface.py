@@ -140,7 +140,7 @@ class AnswerPattern1(IOrigin):
 
     # 模糊匹配
     @staticmethod
-    def answer_11_1(remark, skip_times, options: list, answer_list: list, adapter) -> str:
+    def answer_11_1(remark: str, skip_times: int, options: list, answer_list: list, adapter) -> str:
         for answer in answer_list:
             for content in answer["content"]:
                 for key in content["example"].keys():
@@ -156,14 +156,17 @@ class AnswerPattern1(IOrigin):
                             return str(mean["answer_tag"])
 
     @staticmethod
-    def answer_11_2(remark, skip_times, options: list, answer_list: list, adapter) -> str:
+    def answer_11_2(remark: str, skip_times: int, options: list, answer_list: list, adapter) -> str:
+        lowest_ratio = 0.7  # 若选项集合与题库集合的相似度超过3/4，则该选项有可能等于题库中的选项
+        if len(answer_list) == 1:   # 若题库集合仅1个，降低匹配率，仅需确保不会匹配到非
+            lowest_ratio = 0.5
         for answer in answer_list:
             for content in answer["content"]:
                 if content["example"].get(remark) or adapter.example_get_remark(content["example"], remark):
                     for mean in options:
                         tem_list = adapter.process_option_mean(mean["content"])
-                        # 若选项集合与题库集合的相似度超过3/4，则该选项有可能等于题库中的选项
-                        if Tool.get_ratio_between_list(tem_list, adapter.process_word_mean(content["mean"])) >= 0.7:
+                        if Tool.get_ratio_between_list(tem_list,
+                                                       adapter.process_word_mean(content["mean"])) >= lowest_ratio:
                             if skip_times != 0:
                                 skip_times -= 1
                                 continue
@@ -177,7 +180,7 @@ class AnswerPattern1(IOrigin):
                 return str(mean["answer_tag"])
 
     @staticmethod
-    def answer_17_1(content_list, options: list, answer_dict: dict, adapter) -> str:
+    def answer_17_1(content_list: list, options: list, answer_dict: dict, adapter) -> str:
         for word in options:
             answer = answer_dict.get(word["content"])
             if answer is None:  # 选项中可能存在不在课程中的单词，故查询结果可能为空
