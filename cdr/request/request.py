@@ -4,6 +4,7 @@
 # @Time  : 2020-12-30, 0030 16:09
 # @Author: 佚名
 # @File  : request.py
+import re
 from json import JSONDecodeError
 
 import requests
@@ -27,7 +28,9 @@ __s.adapters.DEFAULT_RETRIES = 15
 
 def __judge_code(res: requests.models.Response) -> requests.models.Response:
     try:
-        _logger.i(res.content.decode("utf-8"), is_show=False)
+        content = res.content.decode("utf-8")
+        if re.match(r".+?\.(?:css|js)(\?.+)?$", res.url) is None and content.find("<html") == -1:
+            _logger.i(content, is_show=False)
     except UnicodeDecodeError:
         # _logger.i(res.content, is_show=False)
         pass

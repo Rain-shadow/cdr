@@ -8,7 +8,6 @@ import asyncio
 import base64
 import io
 import os
-from asyncio.subprocess import SubprocessStreamProtocol
 
 from PIL import Image
 from cdr.config import CONFIG_DIR_PATH

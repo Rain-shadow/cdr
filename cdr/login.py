@@ -94,8 +94,8 @@ class Login:
             'Referer': 'https://app.vocabgo.com/',
             'User-Agent': user_agent,
             # TODO 似乎是md5值，回头随机一个测试康康
-            'X-DevTools-Emulate-Network-Conditions-Client-Id': 'D9886F0A0D37C25B2E9998FEC289C919',
-            # 'X-DevTools-Emulate-Network-Conditions-Client-Id': Tool.md5(user_agent).upper(),
+            # 'X-DevTools-Emulate-Network-Conditions-Client-Id': 'D9886F0A0D37C25B2E9998FEC289C919',
+            'X-DevTools-Emulate-Network-Conditions-Client-Id': Tool.md5(user_agent).upper(),
             'X-Requested-With': 'XMLHttpRequest'
         }
         _logger.i(f'https://gateway.vocabgo.com/Auth/Thirdpart/Authorize?{data}')
@@ -114,7 +114,7 @@ class Login:
         qr.add_data(login_url)
         qr.make(fit=True)
         img = qr.make_image()
-        _logger.i("二维码已生成，将自动展示，请使用微信扫一扫进行词达人授权。成功后请关闭图片查看程序，若失败，用户可在"
-                  "“main目录\\config目录”下找到“授权二维码.jpg”")
+        _logger.i("二维码已生成，将自动展示，请使用微信扫一扫进行词达人授权。成功后请关闭图片查看程序，若无法自动展示，用户可在"
+                  "“main目录\\config目录”下找到“授权二维码.jpg，自行打开照片进行扫码授权”")
         img.save(f"{CONFIG_DIR_PATH}授权二维码.jpg")
         img.show()  # 显示图片

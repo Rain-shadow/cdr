@@ -243,7 +243,7 @@ class Settings(object):
 
     @min_random_time.setter
     def min_random_time(self, value):
-        if not isinstance(value, int) and not isinstance(value, float):
+        if not isinstance(value, (int, float)):
             self._min_random_time = 5
         else:
             if value > 20 or value < 0.2:
@@ -257,7 +257,7 @@ class Settings(object):
 
     @max_random_time.setter
     def max_random_time(self, value):
-        if not isinstance(value, int) and not isinstance(value, float):
+        if not isinstance(value, (int, float)):
             self._max_random_time = 12
         else:
             if value <= self.min_random_time:
@@ -271,7 +271,7 @@ class Settings(object):
 
     @base_score.setter
     def base_score(self, value):
-        if not isinstance(value, int) and not isinstance(value, float):
+        if not isinstance(value, (int, float)):
             self._base_score = 91
         else:
             self._base_score = value
@@ -282,7 +282,7 @@ class Settings(object):
 
     @offset_score.setter
     def offset_score(self, value):
-        if not isinstance(value, int) and not isinstance(value, float):
+        if not isinstance(value, (int, float)):
             self._offset_score = 1
         else:
             self._offset_score = value
