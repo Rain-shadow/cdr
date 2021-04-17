@@ -18,8 +18,10 @@ class IOrigin:
 
     # 处理不同情况下的翻译以从例句列表中得到对应的英语例句
     @staticmethod
-    def example_get_remark(example_list: dict, remark: str) -> str:
-        pass
+    def example_get_remark(example_dict: dict, remark: str) -> str:
+        for key, value in example_dict.items():
+            if Tool.get_ratio_between_str(key, remark) >= 0.9:
+                return value
 
     # 处理不同情况下的翻译以从短语列表中得到对应的英语短语数组
     @staticmethod
@@ -83,6 +85,10 @@ class AnswerPattern1(IOrigin):
             content = tem_list[0]
             remark = tem_list[1]
         return content, remark
+
+    @staticmethod
+    def example_get_remark(example_dict: dict, remark: str) -> str:
+        pass
 
     @staticmethod
     def usage_get_remark(usage_list: dict, remark: str) -> list:
@@ -226,11 +232,9 @@ class AnswerPattern7(IOrigin):
     @staticmethod
     def process_option_mean(mean: str) -> list:
         # 移除所有空格并排序
-        print(Tool.sort_str(re.sub(r"\s+", "", mean)))
         return [Tool.sort_str(re.sub(r"\s+", "", mean))]
 
     @staticmethod
     def process_word_mean(mean: str) -> list:
         # 移除所有空格并排序
-        print(Tool.sort_str(re.sub(r"\s+", "", mean)))
         return [Tool.sort_str(re.sub(r"\s+", "", mean))]

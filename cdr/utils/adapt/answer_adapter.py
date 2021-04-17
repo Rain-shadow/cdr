@@ -29,9 +29,9 @@ class AnswerAdapter:
         return content, remark
 
     # 无则返回None
-    def example_get_remark(self, example_list: dict, remark: str) -> str:
+    def example_get_remark(self, example_dict: dict, remark: str) -> str:
         for cls in self.__interfaces:
-            result = cls.example_get_remark(example_list, remark)
+            result = cls.example_get_remark(example_dict, remark)
             if result:
                 return result
 
