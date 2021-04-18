@@ -278,8 +278,6 @@ class CDRTask:
                 code = await VerificationCode.get_vc(json_data["data"]["original_image"], task_id)
                 _logger.v(code)
                 while code == "-1":
-                    import os
-                    os.remove(f"{CONFIG_DIR_PATH}验证码-{task_id}.png")
                     res = await requests.get("https://gateway.vocabgo.com/Student/Captcha/Get",
                                              params=data, headers=settings.header, timeout=settings.timeout)
                     json_data = await res.json()

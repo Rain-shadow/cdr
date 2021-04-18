@@ -24,9 +24,6 @@ class VerificationCode:
         img.save(f"{CONFIG_DIR_PATH}验证码-{task_id}.png")
         print(f"start {CONFIG_DIR_PATH}验证码-{task_id}.png")
         loop = asyncio.get_event_loop()
-        # protocol_factory = lambda: SubprocessStreamProtocol(limit=2 ** 16,
-        #                                                     loop=loop)
-        # await loop.subprocess_shell(protocol_factory, "pause")
         proc = await asyncio.create_subprocess_shell(f"start {CONFIG_DIR_PATH}验证码-{task_id}.png", loop=loop)
         await proc.communicate()
         code = input(f"验证码-{task_id}：")
