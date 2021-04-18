@@ -19,7 +19,7 @@ class IOrigin:
     # 处理不同情况下的翻译以从例句列表中得到对应的英语例句
     @staticmethod
     def is_remark_or_sentence_in_example(example_dict: dict, remark: str, sentence: str) -> bool:
-        return example_dict["example"].get(remark) is not None
+        return example_dict.get(remark) is not None
 
     # 处理不同情况下的翻译以从短语列表中得到对应的英语短语数组
     @staticmethod
