@@ -28,12 +28,13 @@ class AnswerAdapter:
             content, remark = cls.process_content_and_remark(content, remark)
         return content, remark
 
-    # 无则返回None
-    def example_get_remark(self, example_dict: dict, remark: str) -> str:
+    # 无则返回False
+    def is_remark_or_sentence_in_example(self, example_dict: dict, remark: str, sentence: str) -> bool:
         for cls in self.__interfaces:
-            result = cls.example_get_remark(example_dict, remark)
+            result = cls.is_remark_or_sentence_in_example(example_dict, remark, sentence)
             if result:
                 return result
+        return False
 
     # 无则返回None
     def usage_get_remark(self, usage_list: dict, remark: str) -> list:
@@ -74,16 +75,17 @@ class AnswerAdapter:
         return result
 
     # 无则返回None
-    def answer_11_1(self, remark, skip_times, options: list, answer_list: list, adapter) -> str:
+    def answer_11_1(self, remark: str, skip_times: int, options: list, answer_list: list, adapter) -> str:
         for cls in self.__interfaces:
             result = cls.answer_11_1(remark, skip_times, options, answer_list, adapter)
             if result:
                 return result
 
     # 无则返回None
-    def answer_11_2(self, remark, skip_times, options: list, answer_list: list, adapter) -> str:
+    def answer_11_2(self, sentence: str, remark: str, skip_times: int,
+                    options: list, answer_list: list, adapter) -> str:
         for cls in self.__interfaces:
-            result = cls.answer_11_2(remark, skip_times, options, answer_list, adapter)
+            result = cls.answer_11_2(sentence, remark, skip_times, options, answer_list, adapter)
             if result:
                 return result
 

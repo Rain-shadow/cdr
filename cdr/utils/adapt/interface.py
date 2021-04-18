@@ -18,10 +18,8 @@ class IOrigin:
 
     # 处理不同情况下的翻译以从例句列表中得到对应的英语例句
     @staticmethod
-    def example_get_remark(example_dict: dict, remark: str) -> str:
-        for key, value in example_dict.items():
-            if Tool.get_ratio_between_str(key, remark) >= 0.9:
-                return value
+    def is_remark_or_sentence_in_example(example_dict: dict, remark: str, sentence: str) -> bool:
+        return example_dict["example"].get(remark) is not None
 
     # 处理不同情况下的翻译以从短语列表中得到对应的英语短语数组
     @staticmethod
@@ -57,7 +55,7 @@ class IOrigin:
     # 处理题型11中精确匹配失败的情况
     # 为选项翻译添加模糊匹配
     @staticmethod
-    def answer_11_2(remark: str, skip_times: int, options: list, answer_list: list, adapter) -> str:
+    def answer_11_2(sentence: str, remark: str, skip_times: int, options: list, answer_list: list, adapter) -> str:
         pass
 
     # 处理题型15中精确匹配失败的情况
@@ -106,8 +104,15 @@ class AnswerPattern1(IOrigin):
         return content, remark
 
     @staticmethod
-    def example_get_remark(example_dict: dict, remark: str) -> str:
-        pass
+    def is_remark_or_sentence_in_example(example_dict: dict, remark: str, sentence: str) -> bool:
+        sentence = " ".join(sentence.split())
+        for value in example_dict.values():
+            if value == sentence:
+                return True
+        for key in example_dict.keys():
+            if Tool.get_ratio_between_str(key, remark) >= 0.9:
+                return True
+        return False
 
     @staticmethod
     def usage_get_remark(usage_list: dict, remark: str) -> list:
@@ -156,13 +161,13 @@ class AnswerPattern1(IOrigin):
                             return str(mean["answer_tag"])
 
     @staticmethod
-    def answer_11_2(remark: str, skip_times: int, options: list, answer_list: list, adapter) -> str:
+    def answer_11_2(sentence: str, remark: str, skip_times: int, options: list, answer_list: list, adapter) -> str:
         lowest_ratio = 0.7  # 若选项集合与题库集合的相似度超过3/4，则该选项有可能等于题库中的选项
         if len(answer_list) == 1:   # 若题库集合仅1个，降低匹配率，仅需确保不会匹配到非
             lowest_ratio = 0.5
         for answer in answer_list:
             for content in answer["content"]:
-                if content["example"].get(remark) or adapter.example_get_remark(content["example"], remark):
+                if adapter.is_remark_or_sentence_in_example(content["example"], remark, sentence):
                     for mean in options:
                         tem_list = adapter.process_option_mean(mean["content"])
                         if Tool.get_ratio_between_list(tem_list,
@@ -175,8 +180,8 @@ class AnswerPattern1(IOrigin):
     @staticmethod
     def answer_15_1(answer_list: list, options: list, adapter) -> str:
         for mean in options:
-            if Tool.get_ratio_between_list(adapter.process_option_mean(mean["content"]),
-                                           answer_list) >= 0.9:
+            if Tool.get_ratio_between_list(
+                    adapter.process_option_mean(mean["content"]), answer_list) >= 0.8:
                 return str(mean["answer_tag"])
 
     @staticmethod

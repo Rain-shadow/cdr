@@ -23,8 +23,10 @@ class Answer:
     # assist_word 时态不确定的单词
     # remark 例句的翻译
     # options 题目选项
-    def find_answer_by_11(self, assist_word: str, remark: str, options: list, skip_times: int) -> str:
+    def find_answer_by_11(self, sentence: str, remark: str, options: list, skip_times: int) -> str:
         _logger.d("\nfind_answer_by_11")
+        _logger.d(sentence)
+        assist_word = sentence[sentence.find("{") + 1:sentence.find("}")].strip()
         _logger.d(assist_word)
         _logger.d(options)
         # 根据辅助词先行过滤出一个粗略的可能性列表
@@ -35,7 +37,7 @@ class Answer:
             raise AnswerNotFoundException(11)
         for answer in answer_list:
             for content in answer["content"]:
-                if content["example"].get(remark) or adapter.example_get_remark(content["example"], remark):
+                if adapter.is_remark_or_sentence_in_example(content["example"], remark, sentence):
                     for mean in options:
                         tem_list = adapter.process_option_mean(mean["content"])
                         # 若选项集合与题库集合的交集存在，则说明该选项等于题库中的某个选项
@@ -48,7 +50,7 @@ class Answer:
         vague_answer = adapter.answer_11_1(remark, skip_times, options, answer_list, adapter)
         if vague_answer:
             return vague_answer
-        vague_answer = adapter.answer_11_2(remark, skip_times, options, answer_list, adapter)
+        vague_answer = adapter.answer_11_2(sentence, remark, skip_times, options, answer_list, adapter)
         if vague_answer:
             return vague_answer
         raise AnswerNotFoundException(11)
@@ -56,8 +58,10 @@ class Answer:
     # assist_word 时态不确定的单词
     # remark 例句的翻译
     # options 题目选项
-    def find_answer_by_13(self, assist_word: str, remark: str, options: list) -> str:
+    def find_answer_by_13(self, sentence: str, remark: str, options: list) -> str:
         _logger.d("\nfind_answer_by_13")
+        _logger.d(sentence)
+        assist_word = sentence[sentence.find("{") + 1:sentence.find("}")].strip()
         _logger.d(assist_word)
         _logger.d(remark)
         _logger.d(options)
@@ -67,7 +71,7 @@ class Answer:
             raise AnswerNotFoundException(13)
         for answer in answer_list:
             for content in answer["content"]:
-                if content["example"].get(remark) or adapter.example_get_remark(content["example"], remark):
+                if adapter.is_remark_or_sentence_in_example(content["example"], remark, sentence):
                     #   创建一个临时列表，方便下一步判断答案
                     tem_list = []
                     for key in content["example"]:
@@ -127,7 +131,7 @@ class Answer:
             _logger.d(answer)
             if answer is None:  # 选项中可能存在不在课程中的单词，故查询结果可能为空
                 continue
-            #   创建一个临时列表
+            # 创建一个临时列表
             tem_list = []
             for mean in answer["content"]:
                 tem_list.extend(adapter.process_word_mean(mean["mean"]))

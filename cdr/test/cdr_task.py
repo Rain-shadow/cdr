@@ -151,11 +151,9 @@ class CDRTask:
         answer_id = None
         try:
             if topic_mode == 11:
-                assist_word = content[content.find("{") + 1:content.find("}")].strip()
-                answer_id = answer.find_answer_by_11(assist_word, remark, options, skip_times)
+                answer_id = answer.find_answer_by_11(content, remark, options, skip_times)
             elif topic_mode == 13:
-                assist_word = content[content.find("{") + 1:content.find("}")].strip()
-                answer_id = answer.find_answer_by_13(assist_word, remark, options)
+                answer_id = answer.find_answer_by_13(content, remark, options)
             elif topic_mode == 15 or topic_mode == 16 \
                     or topic_mode == 21 or topic_mode == 22:
                 answer_id = answer.find_answer_by_15(content.strip(), options)
