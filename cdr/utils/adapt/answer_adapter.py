@@ -90,7 +90,7 @@ class AnswerAdapter:
     # 无则返回None
     def answer_15_1(self, answer_list: list, options: list, adapter) -> str:
         for cls in self.__interfaces:
-            result = cls.answer_15_1(answer_list, options, answer_list, adapter)
+            result = cls.answer_15_1(answer_list, options, adapter)
             if result:
                 return result
 
