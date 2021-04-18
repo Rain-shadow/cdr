@@ -8,6 +8,8 @@ import asyncio
 import json
 import re
 import os
+from asyncio.exceptions import CancelledError
+
 from cdr.aio import aiorequset as requests
 from cdr.exception import NoPermission
 from cdr.utils import Set
@@ -18,11 +20,11 @@ from cdr.config import CDR_VERSION, DATA_DIR_PATH
 
 _settings = _settings
 _logger = Log.get_logger()
-debug_word = None
+debug_word = "reconcile"
 
 
 class Course:
-    DATA_VERSION = 13
+    DATA_VERSION = 14
 
     def __init__(self, course_id):
         self.id = course_id
@@ -72,7 +74,10 @@ class Course:
         for list_id, words in chapter_words.items():
             for word in words:
                 task_list.append(self._get_word_info_and_dispose(list_id, word))
-        await asyncio.gather(*task_list)
+        try:
+            await asyncio.gather(*task_list)
+        except CancelledError as e:
+            pass
         if self._fail_list:
             self.is_success = True
             for list_id, words in results:
@@ -126,12 +131,20 @@ class Course:
         return list_id, word_list
 
     async def _get_word_info_and_dispose(self, list_id: str, word: str, is_second: bool = False):
+        asyncio.current_task().set_name(f"{list_id}_{word}")
         try:
             answer = await self.get_detail_by_word(self.id, list_id, word)
         except NoPermission:
             _logger.i(f"[{self.id}/{list_id}]疑似vip课程章节，无权访问，跳过该章节答案加载，本次不会缓存本地词库")
             self.is_success = False
+            for task in asyncio.all_tasks():
+                name = task.get_name()
+                if name.find(list_id) != -1:
+                    task.cancel()
+                pass
             return
+        except CancelledError as e:
+            pass
         except Exception as e:
             print(e)
             if not is_second:
@@ -230,7 +243,21 @@ class Course:
         tem_list = []
         for value in compatible_word:
             if value[0] == aim_word and value[1] == remark:
-                tem_list.append(list(set(usage) - set(value[3])))
+                tem_list.append(list(set(usage) - set(value[2])))
+        return tem_list
+
+    # 强行适配CET6_hx_12中单词reconcile题型32
+    @staticmethod
+    def force_add_usage(aim_word: str, remark: str):
+        compatible_word = [
+            ["reconcile", "使A与B和好", [
+                ['reconcile', 'with', 'somebody/', 'reconcile', 'A', 'with', 'B']
+            ]],
+        ]
+        tem_list = []
+        for value in compatible_word:
+            if value[0] == aim_word and value[1] == remark:
+                tem_list.extend(value[2])
         return tem_list
 
     @staticmethod
@@ -296,10 +323,10 @@ class Course:
                 if matcher is None:
                     print(j)
 
-                usage = matcher.group(1).replace('{', '').replace('}', '') \
+                usage_value = matcher.group(1).replace('{', '').replace('}', '') \
                     .replace('.', ' ').replace("…", " ").replace("-", " ").replace(",", " ")
                 #   处理因清理"..."而造成的多余空格
-                usage = " ".join(usage.split()).split(" ")
+                usage_value = " ".join(usage_value.split()).split(" ")
                 usage_key = matcher.group(2).strip()
                 if usage_repeat_mean_pattern.fullmatch(usage_key) is not None:
                     usage_key = usage_repeat_mean_pattern.match(usage_key).group(1)
@@ -307,8 +334,11 @@ class Course:
                 #   因不同短语可能具有相同的翻译，需做额外处理
                 if answer["content"][i]["usage"].get(usage_key) is None:
                     answer["content"][i]["usage"][usage_key] = []
-                answer["content"][i]["usage"][usage_key].extend(Course.get_more_usage(usage, word))
-                answer["content"][i]["usage"][usage_key].extend(Course.remove_word_in_usage(usage, word, usage_key))
+                answer["content"][i]["usage"][usage_key].extend(Course.get_more_usage(usage_value, word))
+                answer["content"][i]["usage"][usage_key].extend(
+                    Course.remove_word_in_usage(usage_value, word, usage_key)
+                )
+                answer["content"][i]["usage"][usage_key].extend(Course.force_add_usage(word, usage_key))
             for j in content["example"]:
                 answer["content"][i]["example"][j["sen_mean_cn"]] = j["sen_content"]
                 assist_word = j["sen_content"][j["sen_content"].find("{") + 1:j["sen_content"].find("}")]
