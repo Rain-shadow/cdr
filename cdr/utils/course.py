@@ -22,7 +22,7 @@ debug_word = None
 
 
 class Course:
-    DATA_VERSION = 12
+    DATA_VERSION = 13
 
     def __init__(self, course_id):
         self.id = course_id
@@ -64,6 +64,7 @@ class Course:
         for m_list in json_data:
             #   根据课程id及列表id获取所有单词
             task_list.append(self._get_course_chapter_word_list(m_list["list_id"]))
+        # noinspection PyTypeChecker
         results: list = await asyncio.gather(*task_list)
         for list_id, words in results:
             chapter_words[list_id] = words
@@ -72,7 +73,6 @@ class Course:
             for word in words:
                 task_list.append(self._get_word_info_and_dispose(list_id, word))
         await asyncio.gather(*task_list)
-        #TODO
         if self._fail_list:
             self.is_success = True
             for list_id, words in results:
@@ -223,6 +223,17 @@ class Course:
         return tem_list
 
     @staticmethod
+    def remove_word_in_usage(usage: list, aim_word: str, remark: str):
+        compatible_word = [
+            ["legitimate", "合法政府", ["a"]],
+        ]
+        tem_list = []
+        for value in compatible_word:
+            if value[0] == aim_word and value[1] == remark:
+                tem_list.append(list(set(usage) - set(value[3])))
+        return tem_list
+
+    @staticmethod
     async def get_detail_by_word(course_id, list_id, word):
         timeout = _settings.timeout
         data = {
@@ -285,21 +296,22 @@ class Course:
                 if matcher is None:
                     print(j)
 
-                tem_list = matcher.group(1).replace('{', '').replace('}', '') \
+                usage = matcher.group(1).replace('{', '').replace('}', '') \
                     .replace('.', ' ').replace("…", " ").replace("-", " ").replace(",", " ")
                 #   处理因清理"..."而造成的多余空格
-                tem_list = " ".join(tem_list.split()).split(" ")
-                tem_str = matcher.group(2).strip()
-                if usage_repeat_mean_pattern.fullmatch(tem_str) is not None:
-                    tem_str = usage_repeat_mean_pattern.match(tem_str).group(1)
+                usage = " ".join(usage.split()).split(" ")
+                usage_key = matcher.group(2).strip()
+                if usage_repeat_mean_pattern.fullmatch(usage_key) is not None:
+                    usage_key = usage_repeat_mean_pattern.match(usage_key).group(1)
                 # tem_str = " ".join(tem_str.split())
                 #   因不同短语可能具有相同的翻译，需做额外处理
-                if answer["content"][i]["usage"].get(tem_str) is None:
-                    answer["content"][i]["usage"][tem_str] = []
-                answer["content"][i]["usage"][tem_str].extend(Course.get_more_usage(tem_list, word))
+                if answer["content"][i]["usage"].get(usage_key) is None:
+                    answer["content"][i]["usage"][usage_key] = []
+                answer["content"][i]["usage"][usage_key].extend(Course.get_more_usage(usage, word))
+                answer["content"][i]["usage"][usage_key].extend(Course.remove_word_in_usage(usage, word, usage_key))
             for j in content["example"]:
                 answer["content"][i]["example"][j["sen_mean_cn"]] = j["sen_content"]
-                tem_word = j["sen_content"][j["sen_content"].find("{") + 1:j["sen_content"].find("}")]
-                if tem_word not in answer["assist"]:
-                    answer["assist"].append(tem_word)
+                assist_word = j["sen_content"][j["sen_content"].find("{") + 1:j["sen_content"].find("}")]
+                if assist_word not in answer["assist"]:
+                    answer["assist"].append(assist_word)
         return answer
