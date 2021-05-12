@@ -23,6 +23,7 @@ class Set:
             except ValueError:
                 pass
             else:
+                tem.append(v)
                 tem_map[v] = index
         return Set(tem)
 
