@@ -275,27 +275,6 @@ class AnswerPattern1(IOrigin):
                                 continue
                             return list(tem)[0]
 
-    @staticmethod
-    def answer_51_2(answer: dict, remark: str, skip_times: int, usage_list: list, usage_list_set: Set, adapter) -> str:
-        if len(usage_list) <= 1:
-            return None
-        remark_set = set(adapter.process_option_mean(remark))
-        for key, value in answer.items():
-            for content_list in value["content"]:
-                if len(set(adapter.process_word_mean(content_list["mean"])) & remark_set) != 0:
-                    usages = content_list["usage"].get(remark) \
-                             or adapter.usage_get_remark(content_list["usage"], remark)
-                    for usage in usages:
-                        if len(usage_list) - 1 != len(usage_list_set & Set(usage)) \
-                                or len(usage_list) != len(usage):
-                            continue
-                        for index, word in enumerate(usage):
-                            if word != usage_list[index]:
-                                if skip_times != 0:
-                                    skip_times -= 1
-                                    continue
-                                return usage[index]
-
 
 # 20.12.29修复由群友183***092提交的BUG
 # 处理选项中莫名其妙多出来的一个"，"
@@ -383,6 +362,27 @@ class AnswerPattern7(IOrigin):
 
 # 21.5.12修复由群友530***887提交的BUG
 class AnswerPattern8(IOrigin):
+
+    @staticmethod
+    def answer_51_1(answer: dict, remark: str, skip_times: int, usage_list: list, usage_list_set: Set, adapter) -> str:
+        if len(usage_list) <= 1:
+            return None
+        remark_set = set(adapter.process_option_mean(remark))
+        for key, value in answer.items():
+            for content_list in value["content"]:
+                if len(set(adapter.process_word_mean(content_list["mean"])) & remark_set) != 0:
+                    usages = content_list["usage"].get(remark) \
+                             or adapter.usage_get_remark(content_list["usage"], remark)
+                    for usage in usages:
+                        if len(usage_list) - 1 != len(usage_list_set & Set(usage)) \
+                                or len(usage_list) != len(usage):
+                            continue
+                        for index, word in enumerate(usage):
+                            if word != usage_list[index]:
+                                if skip_times != 0:
+                                    skip_times -= 1
+                                    continue
+                                return usage[index]
 
     @staticmethod
     def answer_51_2(answer: dict, remark: str, skip_times: int, usage_list: list, usage_list_set: Set, adapter) -> str:
