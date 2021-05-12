@@ -95,6 +95,10 @@ class IOrigin:
     def answer_51_1(answer: dict, remark: str, skip_times: int, usage_list: list, usage_list_set: Set, adapter) -> str:
         pass
 
+    @staticmethod
+    def answer_51_2(answer: dict, remark: str, skip_times: int, usage_list: list, usage_list_set: Set, adapter) -> str:
+        pass
+
 
 # 代码重构适配
 class AnswerPattern1(IOrigin):
@@ -255,6 +259,27 @@ class AnswerPattern1(IOrigin):
                                 skip_times -= 1
                                 continue
                             return list(tem)[0]
+
+    @staticmethod
+    def answer_51_2(answer: dict, remark: str, skip_times: int, usage_list: list, usage_list_set: Set, adapter) -> str:
+        if len(usage_list) <= 1:
+            return None
+        remark_set = set(adapter.process_option_mean(remark))
+        for key, value in answer.items():
+            for content_list in value["content"]:
+                if len(set(adapter.process_word_mean(content_list["mean"])) & remark_set) != 0:
+                    usages = content_list["usage"].get(remark) \
+                             or adapter.usage_get_remark(content_list["usage"], remark)
+                    for usage in usages:
+                        if len(usage_list) - 1 != len(usage_list_set & Set(usage)) \
+                                or len(usage_list) != len(usage):
+                            continue
+                        for index, word in enumerate(usage):
+                            if word != usage_list[index]:
+                                if skip_times != 0:
+                                    skip_times -= 1
+                                    continue
+                                return usage[index]
 
 
 # 20.12.29修复由群友183***092提交的BUG

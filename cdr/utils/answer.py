@@ -311,6 +311,9 @@ class Answer:
         vague_answer = adapter.answer_51_1(self._course.data, remark, skip_times, usage_list, usage_list_set)
         if vague_answer:
             return vague_answer
+        vague_answer = adapter.answer_51_2(self._course.data, remark, skip_times, usage_list, usage_list_set)
+        if vague_answer:
+            return vague_answer
         raise AnswerNotFoundException(51)
 
     # 54与其处理方式一致

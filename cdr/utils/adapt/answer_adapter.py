@@ -130,3 +130,10 @@ class AnswerAdapter:
             result = cls.answer_51_1(answer, remark, skip_times, usage_list, usage_list_set, self)
             if result:
                 return result
+
+    # 无则返回None
+    def answer_51_2(self, answer: dict, remark: str, skip_times: int, usage_list: list, usage_list_set: Set) -> str:
+        for cls in self.__interfaces:
+            result = cls.answer_51_2(answer, remark, skip_times, usage_list, usage_list_set, self)
+            if result:
+                return result
