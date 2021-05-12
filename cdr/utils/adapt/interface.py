@@ -25,12 +25,12 @@ class IOrigin:
 
     # 处理不同情况下的翻译以从短语列表中得到对应的英语短语数组
     @staticmethod
-    def usage_get_remark(usage_list: dict, remark: str) -> list:
+    def usage_get_remark(usage_dict: dict, remark: str) -> list:
         pass
 
     # 处理不同情况下的翻译以从短语列表中得到对应的英语短语数组
     @staticmethod
-    def usage_get_remark_by_ratio(usage_list: dict, remark_list: list, ratio: float, adapter) -> list:
+    def usage_get_remark_by_ratio(usage_dict: dict, remark_list: list, ratio: float, adapter) -> list:
         pass
 
     # 处理选项中单词词义
@@ -130,16 +130,16 @@ class AnswerPattern1(IOrigin):
         return False
 
     @staticmethod
-    def usage_get_remark(usage_list: dict, remark: str) -> list:
+    def usage_get_remark(usage_dict: dict, remark: str) -> list:
         tem = remark.replace('.', ' ').replace("…", " ").replace("-", " ").replace(",", " ")
         # 处理因清理"..."而造成的多余空格
         tem = " ".join(tem.split())
-        return usage_list.get(tem) or usage_list.get(remark.replace("…", "", 1).strip())
+        return usage_dict.get(tem) or usage_dict.get(remark.replace("…", "", 1).strip())
 
     # 处理不同情况下的翻译以从短语列表中得到对应的英语短语数组
     @staticmethod
-    def usage_get_remark_by_ratio(usage_list: dict, remark_list: list, ratio: float, adapter) -> list:
-        for key, value in usage_list.items():
+    def usage_get_remark_by_ratio(usage_dict: dict, remark_list: list, ratio: float, adapter) -> list:
+        for key, value in usage_dict.items():
             if Tool.get_ratio_between_list(
                 remark_list,
                 adapter.process_word_mean(key)
@@ -269,7 +269,7 @@ class AnswerPattern1(IOrigin):
                             max_set = min_set
                             min_set = tem
                         tem = max_set - min_set - Set(["an", "a", "the"])
-                        if len(tem) == 1 and len(usage_list) == len(Set(usage) - tem):
+                        if len(max_set) == 1 and len(min_set) == len(Set(max_set) - tem):
                             if skip_times != 0:
                                 skip_times -= 1
                                 continue
@@ -322,7 +322,7 @@ class AnswerPattern4(IOrigin):
 class AnswerPattern5(IOrigin):
 
     @staticmethod
-    def usage_get_remark(usage_list: dict, remark: str) -> list:
+    def usage_get_remark(usage_dict: dict, remark: str) -> list:
         is_more = re.compile(r"(.*…)\s(…[^a-zA-Z]*)")
         if is_more.match(remark) is None:
             matcher = re.match(r"([0-9A-Za-z.\s(){}'/&‘’,（）…-]*)?\s(.*)", remark)
@@ -330,7 +330,7 @@ class AnswerPattern5(IOrigin):
             matcher = re.match(r"([0-9A-Za-z.\s(){}'/&‘’,（）…-]*)?\s(….*)", remark)
         if matcher is None:
             return None
-        return usage_list.get(matcher.group(2).strip())
+        return usage_dict.get(matcher.group(2).strip())
 
 
 # 21.3.25修复由群友224***087提交的BUG
@@ -404,7 +404,7 @@ class AnswerPattern8(IOrigin):
                             max_set = min_set
                             min_set = tem
                         tem = max_set - min_set - Set(["an", "a", "the", "oneself"])
-                        if len(tem) == 1 and len(usage_list) == len(Set(usage) - tem):
+                        if len(max_set) == 1 and len(min_set) == len(Set(max_set) - tem):
                             if skip_times != 0:
                                 skip_times -= 1
                                 continue

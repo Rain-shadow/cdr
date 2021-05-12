@@ -36,15 +36,15 @@ class AnswerAdapter:
         return False
 
     # 无则返回None
-    def usage_get_remark(self, usage_list: dict, remark: str) -> list:
+    def usage_get_remark(self, usage_dict: dict, remark: str) -> list:
         for cls in self.__interfaces:
-            result = cls.usage_get_remark(usage_list, remark)
+            result = cls.usage_get_remark(usage_dict, remark)
             if result:
                 return result
 
-    def usage_get_remark_by_ratio(self, usage_list: dict, remark_list: list, ratio: float = 0.6) -> list:
+    def usage_get_remark_by_ratio(self, usage_dict: dict, remark_list: list, ratio: float = 0.6) -> list:
         for cls in self.__interfaces:
-            result = cls.usage_get_remark_by_ratio(usage_list, remark_list, ratio, self)
+            result = cls.usage_get_remark_by_ratio(usage_dict, remark_list, ratio, self)
             if result:
                 return result
 
