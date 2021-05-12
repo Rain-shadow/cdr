@@ -45,6 +45,13 @@ class Tool:
         return max_ratio
 
     @staticmethod
+    def is_str_in_list(content: str, aim: list) -> bool:
+        for item in aim:
+            if content.find(item) != -1 or item.find(content) != -1:
+                return True
+        return False
+
+    @staticmethod
     def is_str_in_list_by_some_difference(content: str, aim: list) -> bool:
         ratio = 0.0
         for item in aim:

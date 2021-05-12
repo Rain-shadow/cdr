@@ -16,15 +16,23 @@ class Set:
 
     def __and__(self, other):
         tem = []
-        teem_map = {}
+        tem_map = {}
         for v in self.__value:
             try:
-                index = other.__value.index(v, teem_map[v] if teem_map.get(v) else 0)
+                index = other.__value.index(v, tem_map[v] if tem_map.get(v) else 0)
             except ValueError:
                 pass
             else:
-                tem.append(v)
-                teem_map[v] = index
+                tem_map[v] = index
+        return Set(tem)
+
+    def __sub__(self, other):
+        tem = self.__value.copy()
+        for v in other.__value:
+            try:
+                tem.remove(v)
+            except ValueError:
+                pass
         return Set(tem)
 
     def __len__(self):

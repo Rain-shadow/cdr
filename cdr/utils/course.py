@@ -26,7 +26,7 @@ debug_word = "reconcile"
 class Course:
     DATA_VERSION = 14
 
-    def __init__(self, course_id):
+    def __init__(self, course_id: str):
         self.id = course_id
         self.data = {}
         self._headers = {

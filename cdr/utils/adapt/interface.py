@@ -5,6 +5,8 @@
 # @Author: 佚名
 # @File  : interface.py
 import re
+
+from .. import Set
 from ..tool import Tool
 
 
@@ -88,6 +90,10 @@ class IOrigin:
     @staticmethod
     def answer_51(option_word: str, word: str) -> str:
         return word
+
+    @staticmethod
+    def answer_51_1(answer: dict, remark: str, skip_times: int, usage_list: list, usage_list_set: Set, adapter) -> str:
+        pass
 
 
 # 代码重构适配
@@ -180,8 +186,10 @@ class AnswerPattern1(IOrigin):
     @staticmethod
     def answer_15_1(answer_list: list, options: list, adapter) -> str:
         for mean in options:
-            if Tool.get_ratio_between_list(
-                    adapter.process_option_mean(mean["content"]), answer_list) >= 0.8:
+            if Tool.is_str_in_list(mean["content"], answer_list) \
+                    or Tool.get_ratio_between_list(adapter.process_option_mean(mean["content"]),
+                                                   answer_list
+                                                   ) >= 0.8:
                 return str(mean["answer_tag"])
 
     @staticmethod
@@ -222,6 +230,31 @@ class AnswerPattern1(IOrigin):
     @staticmethod
     def answer_51(option_word: str, word: str) -> str:
         return word.replace(option_word.replace("{", "").replace("}", ""), "")
+
+    @staticmethod
+    def answer_51_1(answer: dict, remark: str, skip_times: int, usage_list: list, usage_list_set: Set, adapter) -> str:
+        if len(usage_list) <= 1:
+            return None
+        for key, value in answer.items():
+            for content_list in value["content"]:
+                usages = content_list["usage"].get(remark)\
+                         or adapter.usage_get_remark(content_list["usage"], remark)
+                if usages is not None:
+                    for usage in usages:
+                        if abs(len(usage) - len(usage_list)) != 1:
+                            continue
+                        max_set = Set(usage)
+                        min_set = usage_list_set
+                        if len(max_set) < len(min_set):
+                            tem = max_set
+                            max_set = min_set
+                            min_set = tem
+                        tem = max_set - min_set - Set(["an", "a", "the"])
+                        if len(tem) == 1 and len(usage_list) == len(Set(usage) - tem):
+                            if skip_times != 0:
+                                skip_times -= 1
+                                continue
+                            return list(tem)[0]
 
 
 # 20.12.29修复由群友183***092提交的BUG

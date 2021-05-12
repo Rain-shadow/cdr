@@ -47,10 +47,10 @@ class Answer:
                                 skip_times -= 1
                                 continue
                             return str(mean["answer_tag"])
-        vague_answer = adapter.answer_11_1(remark, skip_times, options, answer_list, adapter)
+        vague_answer = adapter.answer_11_1(remark, skip_times, options, answer_list)
         if vague_answer:
             return vague_answer
-        vague_answer = adapter.answer_11_2(sentence, remark, skip_times, options, answer_list, adapter)
+        vague_answer = adapter.answer_11_2(sentence, remark, skip_times, options, answer_list)
         if vague_answer:
             return vague_answer
         raise AnswerNotFoundException(11)
@@ -106,7 +106,7 @@ class Answer:
         for mean in options:
             if len(tem_set & set(adapter.process_option_mean(mean["content"]))) != 0:
                 return str(mean["answer_tag"])
-        vague_answer = adapter.answer_15_1(tem_list, options, adapter)
+        vague_answer = adapter.answer_15_1(tem_list, options)
         if vague_answer:
             return vague_answer
         raise AnswerNotFoundException(15)
@@ -144,7 +144,7 @@ class Answer:
             _logger.d(answer)
             if answer:  # 选项中可能存在不在课程中的单词，故查询结果可能为空
                 answer_dict[word["content"]] = answer
-        vague_answer = adapter.answer_17_1(content_list, options, answer_dict, adapter)
+        vague_answer = adapter.answer_17_1(content_list, options, answer_dict)
         if vague_answer:
             return vague_answer
         raise AnswerNotFoundException(17)
@@ -308,6 +308,9 @@ class Answer:
                                     # 原本只需返回usage[index]即可
                                     # 但因兼容CET4_3的at one's {}'s end(智穷力竭)特殊案例，不得不复杂化
                                     return adapter.answer_51(usage_list[index], usage[index])
+        vague_answer = adapter.answer_51_1(self._course.data, remark, skip_times, usage_list, usage_list_set)
+        if vague_answer:
+            return vague_answer
         raise AnswerNotFoundException(51)
 
     # 54与其处理方式一致

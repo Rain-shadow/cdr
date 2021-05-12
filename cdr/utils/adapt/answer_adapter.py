@@ -7,7 +7,7 @@
 import inspect
 import sys
 import re
-from .interface import IOrigin
+from .. import Set
 
 _interfaces = []
 
@@ -16,7 +16,6 @@ for __cls_name, __cls in inspect.getmembers(sys.modules["cdr.utils.adapt.interfa
         _interfaces.append(__cls)
 
 
-# TODO
 class AnswerAdapter:
 
     def __init__(self):
@@ -75,31 +74,31 @@ class AnswerAdapter:
         return result
 
     # 无则返回None
-    def answer_11_1(self, remark: str, skip_times: int, options: list, answer_list: list, adapter) -> str:
+    def answer_11_1(self, remark: str, skip_times: int, options: list, answer_list: list) -> str:
         for cls in self.__interfaces:
-            result = cls.answer_11_1(remark, skip_times, options, answer_list, adapter)
+            result = cls.answer_11_1(remark, skip_times, options, answer_list, self)
             if result:
                 return result
 
     # 无则返回None
     def answer_11_2(self, sentence: str, remark: str, skip_times: int,
-                    options: list, answer_list: list, adapter) -> str:
+                    options: list, answer_list: list) -> str:
         for cls in self.__interfaces:
-            result = cls.answer_11_2(sentence, remark, skip_times, options, answer_list, adapter)
+            result = cls.answer_11_2(sentence, remark, skip_times, options, answer_list, self)
             if result:
                 return result
 
     # 无则返回None
-    def answer_15_1(self, answer_list: list, options: list, adapter) -> str:
+    def answer_15_1(self, answer_list: list, options: list) -> str:
         for cls in self.__interfaces:
-            result = cls.answer_15_1(answer_list, options, adapter)
+            result = cls.answer_15_1(answer_list, options, self)
             if result:
                 return result
 
     # 无则返回None
-    def answer_17_1(self, content_list: list, options: list, answer_list: list, adapter) -> str:
+    def answer_17_1(self, content_list: list, options: list, answer_list: list) -> str:
         for cls in self.__interfaces:
-            result = cls.answer_17_1(content_list, options, answer_list, adapter)
+            result = cls.answer_17_1(content_list, options, answer_list, self)
             if result:
                 return result
 
@@ -124,3 +123,10 @@ class AnswerAdapter:
             if result:
                 return result
         return word
+
+    # 无则返回None
+    def answer_51_1(self, answer: dict, remark: str, skip_times: int, usage_list: list, usage_list_set: Set) -> str:
+        for cls in self.__interfaces:
+            result = cls.answer_51_1(answer, remark, skip_times, usage_list, usage_list_set, self)
+            if result:
+                return result
