@@ -28,6 +28,11 @@ class IOrigin:
     def usage_get_remark(usage_list: dict, remark: str) -> list:
         pass
 
+    # 处理不同情况下的翻译以从短语列表中得到对应的英语短语数组
+    @staticmethod
+    def usage_get_remark_by_ratio(usage_list: dict, remark_list: list, ratio: float, adapter) -> list:
+        pass
+
     # 处理选项中单词词义
     @staticmethod
     def process_option_mean(mean: str) -> list:
@@ -130,6 +135,16 @@ class AnswerPattern1(IOrigin):
         # 处理因清理"..."而造成的多余空格
         tem = " ".join(tem.split())
         return usage_list.get(tem) or usage_list.get(remark.replace("…", "", 1).strip())
+
+    # 处理不同情况下的翻译以从短语列表中得到对应的英语短语数组
+    @staticmethod
+    def usage_get_remark_by_ratio(usage_list: dict, remark_list: list, ratio: float, adapter) -> list:
+        for key, value in usage_list.items():
+            if Tool.get_ratio_between_list(
+                remark_list,
+                adapter.process_word_mean(key)
+            ) > ratio:
+                return value
 
     @staticmethod
     def process_option_mean(mean: str) -> list:
@@ -314,6 +329,11 @@ class AnswerPattern3(IOrigin):
 class AnswerPattern4(IOrigin):
 
     @staticmethod
+    def process_option_mean(mean: str) -> list:
+        tem = mean.replace("…", "")
+        return [tem, Tool.sort_str(tem)]
+
+    @staticmethod
     def process_word_mean(mean: str) -> list:
         return [re.sub(r"(?:[A-Za-z-]*)?\s?", "", mean)]
 
@@ -359,3 +379,28 @@ class AnswerPattern7(IOrigin):
     def process_word_mean(mean: str) -> list:
         # 移除所有空格并排序
         return [Tool.sort_str(re.sub(r"\s+", "", mean))]
+
+
+# 21.5.12修复由群友530***887提交的BUG
+class AnswerPattern8(IOrigin):
+
+    @staticmethod
+    def answer_51_2(answer: dict, remark: str, skip_times: int, usage_list: list, usage_list_set: Set, adapter) -> str:
+        if len(usage_list) <= 1:
+            return None
+        for key, value in answer.items():
+            for content_list in value["content"]:
+                usages = content_list["usage"].get(remark) \
+                         or adapter.usage_get_remark_by_ratio(content_list["usage"],
+                                                              adapter.process_option_mean(remark))
+                if usages:
+                    for usage in usages:
+                        if len(usage_list) - 1 != len(usage_list_set & Set(usage)) \
+                                or len(usage_list) != len(usage):
+                            continue
+                        for index, word in enumerate(usage):
+                            if word != usage_list[index]:
+                                if skip_times != 0:
+                                    skip_times -= 1
+                                    continue
+                                return usage[index]

@@ -42,6 +42,12 @@ class AnswerAdapter:
             if result:
                 return result
 
+    def usage_get_remark_by_ratio(self, usage_list: dict, remark_list: list, ratio: float = 0.6) -> list:
+        for cls in self.__interfaces:
+            result = cls.usage_get_remark_by_ratio(usage_list, remark_list, ratio, self)
+            if result:
+                return result
+
     # 无则返回[]
     def process_option_mean(self, mean: str) -> list:
         # 21.3.17修复由群友253***349提交的BUG
