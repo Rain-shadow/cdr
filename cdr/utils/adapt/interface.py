@@ -393,14 +393,19 @@ class AnswerPattern8(IOrigin):
                 usages = content_list["usage"].get(remark) \
                          or adapter.usage_get_remark_by_ratio(content_list["usage"],
                                                               adapter.process_option_mean(remark))
-                if usages:
+                if usages is not None:
                     for usage in usages:
-                        if len(usage_list) - 1 != len(usage_list_set & Set(usage)) \
-                                or len(usage_list) != len(usage):
+                        if abs(len(usage) - len(usage_list)) != 1:
                             continue
-                        for index, word in enumerate(usage):
-                            if word != usage_list[index]:
-                                if skip_times != 0:
-                                    skip_times -= 1
-                                    continue
-                                return usage[index]
+                        max_set = Set(usage)
+                        min_set = usage_list_set
+                        if len(max_set) < len(min_set):
+                            tem = max_set
+                            max_set = min_set
+                            min_set = tem
+                        tem = max_set - min_set - Set(["an", "a", "the", "oneself"])
+                        if len(tem) == 1 and len(usage_list) == len(Set(usage) - tem):
+                            if skip_times != 0:
+                                skip_times -= 1
+                                continue
+                            return list(tem)[0]
