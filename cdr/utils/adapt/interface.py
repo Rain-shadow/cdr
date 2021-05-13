@@ -208,7 +208,7 @@ class AnswerPattern1(IOrigin):
             if Tool.is_str_in_list(mean["content"], answer_list) \
                     or Tool.get_ratio_between_list(adapter.process_option_mean(mean["content"]),
                                                    answer_list
-                                                   ) >= 0.8:
+                                                   ) >= 0.65:
                 return str(mean["answer_tag"])
 
     @staticmethod
