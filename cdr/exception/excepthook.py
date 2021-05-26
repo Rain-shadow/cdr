@@ -44,7 +44,7 @@ def __my_except_hook(exc_type, exc_value, tb):
     elif exc_type == KeyboardInterrupt:
         _logger.i("AWSL")
     elif exc_type == NetworkError:
-        _logger.e(f"词达人自己崩了！{exc_value.msg}")
+        _logger.e(f"词达人自己崩了！\n{exc_value.msg}")
         _logger.create_error_txt()
     elif exc_type == SystemExit:
         pass

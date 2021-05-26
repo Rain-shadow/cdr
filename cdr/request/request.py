@@ -34,7 +34,7 @@ def __judge_code(res: requests.models.Response) -> requests.models.Response:
     except UnicodeDecodeError:
         # _logger.i(res.content, is_show=False)
         pass
-    if res.status_code != 200:
+    if res.status_code != 200 and res.status_code != 404:
         if res.url != "https://app.vocabgo.com/student/":
             raise NetworkError(res.status_code, res.url, res.content.decode("utf-8"))
     else:
