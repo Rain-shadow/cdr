@@ -280,6 +280,21 @@ class AnswerPattern1(IOrigin):
 # 处理选项中莫名其妙多出来的一个"，"
 class AnswerPattern2(IOrigin):
 
+    # 模糊匹配
+    @staticmethod
+    def answer_11_2(sentence: str, remark: str, skip_times: int, options: list, answer_list: list, adapter) -> str:
+        for answer in answer_list:
+            for content in answer["content"]:
+                if adapter.is_remark_or_sentence_in_example(content["example"], remark, sentence):
+                    mean_list = [content["mean"]]
+                    for mean in options:
+                        tem_list = adapter.process_option_mean(mean["content"])
+                        if Tool.is_str_list_in_another(mean_list, tem_list):
+                            if skip_times != 0:
+                                skip_times -= 1
+                                continue
+                            return str(mean["answer_tag"])
+
     @staticmethod
     def process_word_mean(mean: str) -> list:
         tem = mean.replace("，", "").replace(" ", "")

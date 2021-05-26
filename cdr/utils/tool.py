@@ -11,6 +11,8 @@ import os
 import time
 import threading
 
+from cdr.utils import Set
+
 
 class Tool:
 
@@ -58,6 +60,14 @@ class Tool:
             tem = Tool.get_ratio_between_str(content, item)
             ratio = ratio if tem < ratio else tem
         return ratio >= 0.98
+
+    @staticmethod
+    def is_str_list_in_another(list_a: list, list_b: list) -> bool:
+        for a in list_a:
+            for b in list_b:
+                if "".join(Set([s for s in a]) & Set([s for s in b])) == a:
+                    return True
+        return False
 
     # 答案匹配所需方法，无视可读性按字符大小排序
     @staticmethod

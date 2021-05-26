@@ -13,6 +13,7 @@ class Set:
             self.__value = value
         else:
             self.__value = list(value)
+        self.__count = 0
 
     def __and__(self, other):
         tem = []
@@ -35,6 +36,16 @@ class Set:
             except ValueError:
                 pass
         return Set(tem)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.__count >= len(self.__value):
+            raise StopIteration
+        result = self.__value[self.__count]
+        self.__count = self.__count + 1
+        return result
 
     def __len__(self):
         return self.__value.__len__()
