@@ -160,11 +160,8 @@ class AnswerPattern1(IOrigin):
 
     @staticmethod
     def process_option_usage(usage: str) -> str:
-        # 去汉字
-        re.sub(r"[\u4E00-\u9FA5]", "", usage)
         # 去除ZZ的图标字符串
-        tem = re.sub(r"\\[uU][eE][0-9a-fA-F]{3}", "", usage.encode('unicode-escape').decode("utf-8"))\
-            .encode('utf-8').decode("unicode-escape")
+        tem = re.sub(r"[\ue000-\uefff()]", "", usage)
         tem = tem.replace('.', ' ').replace("…", " ").replace("-", " ").replace(",", " ").replace("\n", "").strip()
         return " ".join(tem.split())
 

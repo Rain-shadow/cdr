@@ -55,6 +55,7 @@ def __my_except_hook(exc_type, exc_value, tb):
         input()
         sys.exit(0)
     else:
+        _logger.e(exc_value)
         _logger.e("未知异常，请上报此错误（error-last.txt）给GM")
         _logger.e(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt")
         _logger.create_error_txt()

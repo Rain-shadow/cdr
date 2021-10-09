@@ -22,7 +22,7 @@ def _get_encode_info(file):
 
 
 class Settings(object):
-    VERSION = 8
+    VERSION = 9
     _instance_lock = threading.Lock()
 
     def __init__(self):
@@ -37,6 +37,7 @@ class Settings(object):
         self._max_random_time = 12
         self._base_score = 90
         self._offset_score = 1
+        self._verify_times = 3
         self.version = Settings.VERSION - 1
         self._note = ""
         self.timeout = 30
@@ -61,6 +62,7 @@ class Settings(object):
             "maxRandomTime": self.max_random_time,
             "baseScore": self.base_score,
             "offsetScore": self.offset_score,
+            "verifyTimes": self.verify_times,
             "version": self.version,
             "#": self._note
         }
@@ -95,6 +97,7 @@ class Settings(object):
                 "maxRandomTime": 12,
                 "baseScore": 91,
                 "offsetScore": 1,
+                "verifyTimes": 3,
                 "version": Settings.VERSION - 1
             }
         if s_json.get("version") is None or s_json["version"] < Settings.VERSION:
@@ -123,6 +126,7 @@ class Settings(object):
                 "baseScore: 以其为基准为，offsetScore为波动范围进行成绩随机。取值容许小数",
                 "offsetScore: 开启随机分数后的偏差值。取值容许小数",
                 "目标分数 ∈ [baseScore - offsetScore, baseScore + offsetScore]",
+                "verifyTimes：自定义验证次数，超过该次数后验证输入交给用户手动输入",
                 "version: 配置文件版本，该项用户不得更改，此值会作为是否更新config文件的依据",
                 "词达人官方限制一天最多答3k题量，若老师发布任务较重，请勿堆积至一天内完成",
                 "若修改配置文件导致程序异常，请删除config.txt文件再运行一次程序使其重新生成即可正常运行"
@@ -138,6 +142,7 @@ class Settings(object):
         self.max_random_time = s_json["maxRandomTime"]
         self.base_score = s_json["baseScore"]
         self.offset_score = s_json["offsetScore"]
+        self.verify_times = s_json["verifyTimes"]
         self.version = s_json["version"]
         self._note = s_json["#"]
         self.timeout = 30
@@ -151,6 +156,8 @@ class Settings(object):
             json_config["isStyleByPercent"] = True
         if version < 8:
             json_config["multipleChapter"] = 1
+        if version < 9:
+            json_config["verifyTimes"] = 3
         return json_config
 
     @property
@@ -286,6 +293,17 @@ class Settings(object):
             self._offset_score = 1
         else:
             self._offset_score = value
+
+    @property
+    def verify_times(self):
+        return self._verify_times
+
+    @verify_times.setter
+    def verify_times(self, value):
+        if not isinstance(value, int):
+            self._verify_times = 3
+        else:
+            self._verify_times = value
 
 
 _settings = Settings()

@@ -11,7 +11,7 @@ import os
 from asyncio.exceptions import CancelledError
 
 from cdr.aio import aiorequset as requests
-from cdr.exception import NoPermission
+from cdr.exception import NoPermission, NoSupportVersionException
 from cdr.utils import Set
 from .setting import _settings
 from .log import Log
@@ -20,11 +20,18 @@ from cdr.config import CDR_VERSION, DATA_DIR_PATH
 
 _settings = _settings
 _logger = Log.get_logger()
-debug_word = "reconcile"
+debug_word = None
 
 
 class Course:
     DATA_VERSION = 14
+
+    __PATTERN = re.compile(r"([0-9A-Za-z.\s(){}'/&‘’,（）…-]*)?\s(.*)")
+    #  适配课程[QXB_3]中指定章节[QXB_3_3_A]单词[insecure]中某个短语引起的短语翻译匹配错误问题
+    #  {insecure} factors 不稳定因素 不稳定因素
+    #  该BUG由群友604***887提供的日志
+    __USAGE_REPEAT_MEAN_PATTERN = re.compile(r"((?:(?!\s).)*)(?:\s?\1)?")
+    __IS_MORE = re.compile(r"(.*…)\s(…[^a-zA-Z]*)")
 
     def __init__(self, course_id: str):
         self.id = course_id
@@ -141,12 +148,20 @@ class Course:
                 name = task.get_name()
                 if name.find(list_id) != -1:
                     task.cancel()
-                pass
+            return
+        except NoSupportVersionException as e:
+            _logger.e(e)
+            _logger.e(f"[{self.id}]答案加载出错，本次不会缓存本地词库")
+            self.is_success = False
+            for task in asyncio.all_tasks():
+                task.cancel()
             return
         except CancelledError as e:
-            pass
+            return
         except Exception as e:
             print(e)
+            _logger.e(e.__traceback__.tb_frame.f_globals["__file__"], is_show=False)
+            _logger.e(e.__traceback__.tb_lineno, is_show=False)
             if not is_second:
                 _logger.w(f"警告！单词：{word}({self.id}/{list_id})加载失败，稍后软件将会尝试二次加载")
             else:
@@ -261,6 +276,88 @@ class Course:
         return tem_list
 
     @staticmethod
+    def process_data(data: dict, version: int) -> list:
+        if version == 1:
+            result = []
+            for v in data["options"]:
+                result.append(v["content"])
+            return result
+        elif version == 2:
+            return data["means"]
+        raise NoSupportVersionException("答案解析", version)
+
+    @staticmethod
+    def process_mean(content_data, version: int) -> str:
+        if version == 1:
+            return content_data["mean"]
+        elif version == 2:
+            #   版本2当中将词性与翻译分割成了数组
+            return ' '.join(content_data["mean"])
+        raise NoSupportVersionException("答案解析", version)
+
+    @staticmethod
+    def process_usage(content_data: dict, version: int) -> list:
+        result = []
+        if version == 1:
+            phrases = content_data["usage"]
+        elif version == 2:
+            phrases = []
+            for mix in content_data["usages"]:
+                phrases.extend(mix["phrases"])
+                phrase = mix["usage"]
+                if phrase is None or len(phrase["eg"]) == 0:
+                    continue
+                result.append({
+                    "key": phrase["cn"],
+                    "value": re.sub(r"</?.*?>|[{}()]", "", phrase["eg"]).split(" ")
+                })
+        else:
+            raise NoSupportVersionException("答案解析", version)
+        for phrase in phrases:
+            phrase = re.sub(r"[\ue000-\uefff]", "", phrase)
+            if Course.__IS_MORE.match(phrase) is None:
+                matcher = Course.__PATTERN.match(phrase)
+            else:
+                matcher = re.match(r"([0-9A-Za-z.\s(){}'/&‘’,（）…-]*)?\s(….*)", phrase)
+            if matcher is None:
+                print(phrase)
+
+            usage_value = re.sub(r"[{}()]", "", matcher.group(1))
+            usage_value = re.sub(r"[.…,-]", " ", usage_value)
+            #   处理因清理"..."而造成的多余空格
+            usage_value = " ".join(usage_value.split()).split(" ")
+            usage_key = matcher.group(2).strip()
+            if Course.__USAGE_REPEAT_MEAN_PATTERN.fullmatch(usage_key) is not None:
+                usage_key = Course.__USAGE_REPEAT_MEAN_PATTERN.match(usage_key).group(1)
+            result.append({
+                "key": usage_key,
+                "value": usage_value
+            })
+        return result
+
+    @staticmethod
+    def process_example(content_data: dict, version: int) -> list:
+        result = []
+        if version == 1:
+            for example in content_data["example"]:
+                result.append({
+                    "key": example["sen_mean_cn"],
+                    "value": example["sen_content"]
+                })
+        elif version == 2:
+            for mix in content_data["usages"]:
+                if mix["examples"] is None:
+                    continue
+                for example in mix["examples"]:
+                    result.append({
+                        "key": example["sen_mean_cn"],
+                        "value": example["sen_content"]
+                    })
+        else:
+            raise NoSupportVersionException("答案解析", version)
+        return result
+
+    @staticmethod
     async def get_detail_by_word(course_id, list_id, word):
         timeout = _settings.timeout
         data = {
@@ -292,56 +389,33 @@ class Course:
             "content": [],
             "assist": []
         }
-        count = 0
-        pattern = re.compile(r"([0-9A-Za-z.\s(){}'/&‘’,（）…-]*)?\s(.*)")
-        #  适配课程[QXB_3]中指定章节[QXB_3_3_A]单词[insecure]中某个短语引起的短语翻译匹配错误问题
-        #  {insecure} factors 不稳定因素 不稳定因素
-        #  该BUG由群友604***887提供的日志
-        usage_repeat_mean_pattern = re.compile(r"((?:(?!\s).)*)(?:\s?\1)?")
-        is_more = re.compile(r"(.*…)\s(…[^a-zA-Z]*)")
-        for i, o in enumerate(data["options"]):
-            count = count + 1
-            content = o["content"]
-            answer["content"].append({})
+        data_version = int(data["version"])
+        for content in Course.process_data(data, data_version):
+            tem_dict = {}
             #   统一词义格式：1.多空格去除为1空格 2.删除中文括号中的附加内容
-            c_str = ' '.join(content["mean"].split())
+            c_str = ' '.join(Course.process_mean(content, data_version).split())
             while c_str.find("（") != -1:
                 c_str = c_str[:c_str.find("（")] + c_str[c_str.find("）") + 1:]
-            answer["content"][i]["mean"] = ' '.join(c_str.split())
+            tem_dict["mean"] = ' '.join(c_str.split())
             del c_str
-            answer["content"][i]["usage"] = {}
-            answer["content"][i]["example"] = {}
+            tem_dict["usage"] = {}
+            tem_dict["example"] = {}
             #   辅助单词列表，存放当前单词例句中的不同时态
             #   处理答案
-            for j in content["usage"]:
-                j = re.sub(r"\\[uU][eE][0-9]{3}", "", j.encode('unicode-escape').decode("utf-8"))\
-                    .encode('utf-8').decode("unicode-escape")
-                if is_more.match(j) is None:
-                    matcher = pattern.match(j)
-                else:
-                    matcher = re.match(r"([0-9A-Za-z.\s(){}'/&‘’,（）…-]*)?\s(….*)", j)
-                if matcher is None:
-                    print(j)
-
-                usage_value = matcher.group(1).replace('{', '').replace('}', '') \
-                    .replace('.', ' ').replace("…", " ").replace("-", " ").replace(",", " ")
-                #   处理因清理"..."而造成的多余空格
-                usage_value = " ".join(usage_value.split()).split(" ")
-                usage_key = matcher.group(2).strip()
-                if usage_repeat_mean_pattern.fullmatch(usage_key) is not None:
-                    usage_key = usage_repeat_mean_pattern.match(usage_key).group(1)
-                # tem_str = " ".join(tem_str.split())
+            for usage in Course.process_usage(content, data_version):
                 #   因不同短语可能具有相同的翻译，需做额外处理
-                if answer["content"][i]["usage"].get(usage_key) is None:
-                    answer["content"][i]["usage"][usage_key] = []
-                answer["content"][i]["usage"][usage_key].extend(Course.get_more_usage(usage_value, word))
-                answer["content"][i]["usage"][usage_key].extend(
-                    Course.remove_word_in_usage(usage_value, word, usage_key)
+                if tem_dict["usage"].get(usage["key"]) is None:
+                    tem_dict["usage"][usage["key"]] = []
+                tem_dict["usage"][usage["key"]].extend(Course.get_more_usage(usage["value"], word))
+                tem_dict["usage"][usage["key"]].extend(
+                    Course.remove_word_in_usage(usage["value"], word, usage["key"])
                 )
-                answer["content"][i]["usage"][usage_key].extend(Course.force_add_usage(word, usage_key))
-            for j in content["example"]:
-                answer["content"][i]["example"][j["sen_mean_cn"]] = j["sen_content"]
-                assist_word = j["sen_content"][j["sen_content"].find("{") + 1:j["sen_content"].find("}")]
+                tem_dict["usage"][usage["key"]].extend(Course.force_add_usage(word, usage["key"]))
+            for example in Course.process_example(content, data_version):
+                value = example["value"]
+                tem_dict["example"][example["key"]] = value
+                assist_word = value[value.find("{") + 1: value.find("}")]
                 if assist_word not in answer["assist"]:
                     answer["assist"].append(assist_word)
+            answer["content"].append(tem_dict)
         return answer

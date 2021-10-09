@@ -261,22 +261,30 @@ class CDRTask:
                 "task_id": task_id,
                 "versions": CDR_VERSION,
             }
+            fail_times = 0
             while True:
+                fail_times = fail_times + 1
                 data["timestamp"] = Tool.time()
                 res = await requests.get("https://gateway.vocabgo.com/Student/Captcha/Get",
                                          params=data, headers=settings.header, timeout=settings.timeout)
                 json_data = await res.json()
                 res.close()
+                ""
                 if json_data["code"] == 0 and json_data["msg"] == "无需验证":
                     return
                 elif json_data["code"] == 0:
-                    _logger.w(json_data["msg"])
-                    _logger.w("词达人验证服务器暂时崩溃，请稍后再试")
+                    if json_data["msg"].find("频繁") != -1:
+                        _logger.w(f"疑似词达人验证码服务器限制\n词达人返回信息：{json_data['msg']}\n")
+                    else:
+                        _logger.w(json_data["msg"])
+                        _logger.w("词达人验证服务器暂时崩溃，请稍后再试")
+                    _logger.v("按回车尝试重新请求验证码")
                     input()
-                _logger.i("验证码即将展示，若看不清可输入-1重新生成")
+                    fail_times = fail_times - 1
+                    continue
+                _logger.i(json_data, is_show=False)
                 from cdr.utils import VerificationCode
-                code = await VerificationCode.get_vc(json_data["data"]["original_image"], task_id)
-                _logger.v(code)
+                code = await VerificationCode.get_vc(json_data["data"]["original_image"], task_id, fail_times)
                 while code == "-1":
                     res = await requests.get("https://gateway.vocabgo.com/Student/Captcha/Get",
                                              params=data, headers=settings.header, timeout=settings.timeout)
@@ -290,8 +298,7 @@ class CDRTask:
                         _logger.w("词达人验证服务器暂时崩溃，请稍后再试")
                         input("按回车重新尝试生成验证码")
                         continue
-                    _logger.i("验证码即将展示，若看不清可输入-1重新生成")
-                    code = await VerificationCode.get_vc(json_data["data"]["original_image"], task_id)
+                    code = await VerificationCode.get_vc(json_data["data"]["original_image"], task_id, fail_times)
                 timestamp = Tool.time()
                 sign = Tool.md5(f"captcha_code={code}&task_id={task_id}&timestamp={timestamp}&versions={CDR_VERSION}"
                                 "ajfajfamsnfaflfasakljdlalkflak")

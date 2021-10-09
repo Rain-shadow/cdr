@@ -8,5 +8,6 @@ from .excepthook import hook_except
 from .answer_not_found import AnswerNotFoundException
 from .answer_wrong import AnswerWrong
 from .no_permission import NoPermission
+from .no_support_version import NoSupportVersionException
 
-__all__ = ["hook_except", "AnswerNotFoundException", "AnswerWrong", "NoPermission"]
+__all__ = ["hook_except", "AnswerNotFoundException", "AnswerWrong", "NoPermission", "NoSupportVersionException"]
