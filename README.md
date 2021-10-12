@@ -1,7 +1,7 @@
 # 词达人-全自动版
 
 ![python-version](https://img.shields.io/badge/python-3.9.4-brightgreen.svg)[![GitHub release](https://img.shields.io/github/v/release/Rain-shadow/cdr.svg)](https://github.com/Rain-shadow/cdr/releases/latest)
-## 21.5.26停止维护
+
 #### 支持班级及自选任务
 #### 如何运行？
 ##### 你可以采用一下指令安装第三方依赖
