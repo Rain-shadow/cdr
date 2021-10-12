@@ -88,7 +88,6 @@ class ClassTask(CDRTask):
         is_random_score = settings.is_random_score
         is_show = not settings.is_multiple_chapter
         if task['over_status'] == 2:
-            task_id = task["task_id"]
             task_type = task["task_type"]
             release_id = task["release_id"]
             now_score = CDRTask.get_random_score(is_open=is_random_score)
@@ -104,11 +103,11 @@ class ClassTask(CDRTask):
                     _logger.w("相同任务重复答题次数过多，疑似存在无法找到答案的题目，跳过该任务", is_show=is_show)
                     break
                 _logger.i("模拟加载流程", is_show=is_show)
+                task_id = await ClassTask.get_task_id(task)
                 if task_type == 1:
                     #   模拟加载流程
                     _logger.i("班级-学习任务", is_show=is_show)
                     # 处理taskId为-1的情况
-                    task_id = await ClassTask.get_task_id(task_id, release_id)
                     await asyncio.sleep(1)
                 data = {
                     "task_id": task_id,
@@ -174,7 +173,7 @@ class ClassTask(CDRTask):
                     await asyncio.sleep(1)
                 _logger.i("开始答题\n", is_show=is_show)
                 if json_data["code"] == 0:
-                    _logger.i(json_data["msg"], is_show=is_show)
+                    _logger.w(json_data["msg"], is_show=is_show)
                     return
                 if settings.is_multiple_chapter:
                     _logger.i(json_data, is_show=False)
@@ -240,19 +239,39 @@ class ClassTask(CDRTask):
         return tem_list
 
     @staticmethod
-    async def get_task_id(task_id: int, release_id: int) -> int:
-        count = 0
-        while task_id == -1 and count < 5:
-            res = await requests.get(f"https://gateway.vocabgo.com/Student/ClassTask/Info?task_id={task_id:d}"
-                                     f"&release_id={release_id:d}&timestamp={Tool.time()}&versions={CDR_VERSION}",
-                                     headers=settings.header, timeout=settings.timeout)
-            json_data = await res.json()
-            res.close()
-            if json_data["code"] == 1:
-                task_id = json_data["data"]["task_id"]
-            _logger.i(f"task_id:{task_id:d},count:{count:d}", is_show=False)
-            count = count + 1
-        return task_id
+    async def get_task_id(task: dict) -> int:
+        if task["task_id"] != -1:
+            return task["task_id"]
+        data = {
+            "task_id": task["task_id"],
+            "release_id": task["release_id"],
+            "timestamp": Tool.time(),
+            "versions": CDR_VERSION,
+        }
+        (await requests.options("https://gateway.vocabgo.com/Student/ClassTask/Info",
+                                params=data, headers=settings.header, timeout=settings.timeout)).close()
+        res = await requests.get("https://gateway.vocabgo.com/Student/ClassTask/Info",
+                                 params=data, headers=settings.header, timeout=settings.timeout)
+        json_data = (await res.json())
+        res.close()
+        if json_data["code"] == 1:
+            return json_data["data"]["task_id"]
+        for task_info in await ClassTask.get_task_list():
+            if task_info["release_id"] == task["release_id"]:
+                if task_info["task_id"] != -1:
+                    return task_info["task_id"]
+                break
+        data["timestamp"] = Tool.time()
+        data["task_type"] = task["task_type"]
+        (await requests.options(url='https://gateway.vocabgo.com/Student/ClassTask/StartAnswer',
+                                headers=settings.header, params=data, timeout=settings.timeout)).close()
+        res = await requests.get(url='https://gateway.vocabgo.com/Student/ClassTask/StartAnswer',
+                                 headers=settings.header, params=data, timeout=settings.timeout)
+        json_data = await res.json()
+        res.close()
+        if json_data["code"] == 1:
+            return json_data["data"]["task_id"]
+        return task["task_id"]
 
     @staticmethod
     async def choose_word(course_id: str, task_id: int, task_type: int) -> bool:

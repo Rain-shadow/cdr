@@ -204,6 +204,14 @@ class Course:
         :return:
         """
         result = []
+        if course_id == course_id:
+            res = await requests.get(f"https://resource.vocabgo.com/Resource/CoursePage/{course_id}.json",
+                                     timeout=_settings.timeout)
+            json_data = await res.json()
+            res.close()
+            for word_info in json_data:
+                result.append((word_info["course_id"], word_info["list_id"], word_info["word"]))
+            return result
         #   获取课程所有列表
         data = {
             "course_id": course_id,
