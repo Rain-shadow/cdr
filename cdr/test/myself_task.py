@@ -24,6 +24,7 @@ class MyselfTask(CDRTask):
         self.__course_id = course_id
     
     async def run(self):
+        self.task_type = "StudyTask"
         course_id = self.__course_id
         task_list, json_data = await MyselfTask.get_task_list(course_id)
         Tool.cls()
@@ -53,14 +54,13 @@ class MyselfTask(CDRTask):
             if tem_flag:
                 break
         # 课程单词预处理加载
-        self._courses_set.add(course_id)
-        course_map = await self.course_pretreatment()
-        Tool.cls()
+        _logger.i("预加载任务所需题库中......")
         for task in task_choose_list:
             self._tasks.add_task([
-                self.do_task(task, course_id, course_map[course_id])
+                self.do_task(task, course_id, await self.get_course_by_task(task))
                 for _ in range(settings.multiple_task)
             ])
+        Tool.cls()
         await self.start_task()
         _logger.i("本次全部任务已完成！")
         input("按回车键返回上一级")
@@ -74,14 +74,15 @@ class MyselfTask(CDRTask):
             task_id = task["task_id"]
             now_score = CDRTask.get_random_score(is_open=is_random_score)
             _logger.i("course_id:" + course_id, is_show=False)
+            _logger.d(course.data)
             _logger.i("开始做【" + task["task_name"] + "】，目标分数：" + str(now_score), is_show=is_show)
             answer = Answer(course) if course else Answer(Course(course_id))
             _logger.i("题库装载完毕！", is_show=is_show)
             count = 0
             while True:
                 count += 1
-                if count > 3:
-                    _logger.w("相同任务重复答题次数过多，疑似存在无法找到答案的题目，自动跳过本任务", is_show=is_show)
+                if count > 2:
+                    _logger.w("相同任务重复答题次数过多，疑似存在无法找到答案的题目，跳过该任务", is_show=is_show)
                     break
                 _logger.i("模拟加载流程", is_show=is_show)
                 #   模拟加载流程

@@ -9,7 +9,7 @@ import threading
 import sys
 from requests import ReadTimeout
 from requests.exceptions import ProxyError, ConnectionError
-from aiohttp.client_exceptions import ServerDisconnectedError
+from aiohttp.client_exceptions import ServerDisconnectedError, ClientConnectorError, ClientOSError
 from urllib3.exceptions import NewConnectionError, MaxRetryError
 
 from cdr.aio import aiorequset
@@ -36,12 +36,13 @@ def __my_except_hook(exc_type, exc_value, tb):
     _logger.e(msg, is_show=False)
     aiorequset.close_session()
     network_error = (ReadTimeout, ProxyError, ConnectionError, ConnectionError, NewConnectionError, MaxRetryError,
-                     ServerDisconnectedError)
+                     ServerDisconnectedError, ClientConnectorError)
     if isinstance(exc_value, network_error):
-        _logger.e("网络不稳定，请待网路恢复后重启程序")
+        _logger.e("网络不稳定，请待网络恢复后重启程序")
     elif exc_type == ValueError and str(exc_value) == "check_hostname requires server_hostname":
         _logger.e("该软件无法在全局代理开启的情况下运行！")
     elif exc_type == KeyboardInterrupt:
+        _logger.v("")
         _logger.i("AWSL")
     elif exc_type == NetworkError:
         _logger.e(f"词达人自己崩了！\n{exc_value.msg}")
@@ -54,12 +55,18 @@ def __my_except_hook(exc_type, exc_value, tb):
         _logger.w("注：该限制为词达人官方行为，与作者无关\n按回车退出程序")
         input()
         sys.exit(0)
+    elif exc_type == ClientOSError:
+        _logger.e(exc_value)
+        _logger.e("作者语：不清楚·不知道·别问我")
+        input("按回车键退出程序")
+        sys.exit(0)
     else:
         _logger.e(exc_value)
         _logger.e("未知异常，请上报此错误（error-last.txt）给GM")
         _logger.e(f"你可以在“main{LOG_DIR_PATH[1:]}”下找到error-last.txt")
         _logger.create_error_txt()
     if threading.current_thread() is threading.main_thread():
+        _logger.close_all_logger()
         input("按回车键退出程序")
         sys.exit(1)
 

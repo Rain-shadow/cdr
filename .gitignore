@@ -7,11 +7,11 @@
 ### CDR ###
 venv*/
 __pycache__/
-build/*
-config/*
-data/*
-log/*
-dist/*
+build/
+config/
+data/
+log/
+dist/
 *.txt
 !requirements.txt
 *.json

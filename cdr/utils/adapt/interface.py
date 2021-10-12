@@ -25,12 +25,12 @@ class IOrigin:
 
     # 处理不同情况下的翻译以从短语列表中得到对应的英语短语数组
     @staticmethod
-    def usage_get_remark(usage_dict: dict, remark: str) -> list:
+    def phrase_get_remark(phrase_dict: dict, remark: str) -> list:
         pass
 
     # 处理不同情况下的翻译以从短语列表中得到对应的英语短语数组
     @staticmethod
-    def usage_get_remark_by_ratio(usage_dict: dict, remark_list: list, ratio: float, adapter) -> list:
+    def phrase_get_remark_by_ratio(phrase_dict: dict, remark_list: list, ratio: float, adapter) -> list:
         pass
 
     # 处理选项中单词词义
@@ -50,8 +50,8 @@ class IOrigin:
 
     # 处理选项中短语翻译的特殊情况（如多出莫名其妙的符号）
     @staticmethod
-    def process_option_usage(usage: str) -> str:
-        return usage
+    def process_option_phrase(phrase: str) -> str:
+        return phrase
 
     # 处理题型11中精确匹配失败的情况
     # 为例句翻译添加模糊匹配
@@ -79,15 +79,15 @@ class IOrigin:
 
     # 处理题型32中一个选项中包含多个单词的情况
     @staticmethod
-    def answer_32_1(options: list, usage: list) -> str:
+    def answer_32_1(options: list, phrase: list) -> str:
         pass
 
     # 处理题型32中选项中包含奇怪的情况
     @staticmethod
-    def answer_32_2(options: list, usage: list) -> str:
+    def answer_32_2(options: list, phrase: list) -> str:
         """
         :param options: 原选项
-        :param usage: 已经匹配出来的短语
+        :param phrase: 已经匹配出来的短语
         :return: 合成好的答案
         """
         pass
@@ -97,11 +97,11 @@ class IOrigin:
         return word
 
     @staticmethod
-    def answer_51_1(answer: dict, remark: str, skip_times: int, usage_list: list, usage_list_set: Set, adapter) -> str:
+    def answer_51_1(answer: dict, remark: str, skip_times: int, phrase_list: list, phrase_list_set: Set, adapter) -> str:
         pass
 
     @staticmethod
-    def answer_51_2(answer: dict, remark: str, skip_times: int, usage_list: list, usage_list_set: Set, adapter) -> str:
+    def answer_51_2(answer: dict, remark: str, skip_times: int, phrase_list: list, phrase_list_set: Set, adapter) -> str:
         pass
 
 
@@ -130,16 +130,16 @@ class AnswerPattern1(IOrigin):
         return False
 
     @staticmethod
-    def usage_get_remark(usage_dict: dict, remark: str) -> list:
+    def phrase_get_remark(phrase_dict: dict, remark: str) -> list:
         tem = remark.replace('.', ' ').replace("…", " ").replace("-", " ").replace(",", " ")
         # 处理因清理"..."而造成的多余空格
         tem = " ".join(tem.split())
-        return usage_dict.get(tem) or usage_dict.get(remark.replace("…", "", 1).strip())
+        return phrase_dict.get(tem) or phrase_dict.get(remark.replace("…", "", 1).strip())
 
     # 处理不同情况下的翻译以从短语列表中得到对应的英语短语数组
     @staticmethod
-    def usage_get_remark_by_ratio(usage_dict: dict, remark_list: list, ratio: float, adapter) -> list:
-        for key, value in usage_dict.items():
+    def phrase_get_remark_by_ratio(phrase_dict: dict, remark_list: list, ratio: float, adapter) -> list:
+        for key, value in phrase_dict.items():
             if Tool.get_ratio_between_list(
                 remark_list,
                 adapter.process_word_mean(key)
@@ -159,9 +159,9 @@ class AnswerPattern1(IOrigin):
         return re.sub(r'\s\s', ' ', sentence)
 
     @staticmethod
-    def process_option_usage(usage: str) -> str:
+    def process_option_phrase(phrase: str) -> str:
         # 去除ZZ的图标字符串
-        tem = re.sub(r"[\ue000-\uefff()]", "", usage)
+        tem = re.sub(r"[\ue000-\uefff()]", "", phrase)
         tem = tem.replace('.', ' ').replace("…", " ").replace("-", " ").replace(",", " ").replace("\n", "").strip()
         return " ".join(tem.split())
 
@@ -222,13 +222,13 @@ class AnswerPattern1(IOrigin):
                 return str(word["answer_tag"])
 
     @staticmethod
-    def answer_32_1(options: list, usage: list) -> str:
+    def answer_32_1(options: list, phrase: list) -> str:
         result = []
         tem_map = {}
         for index, option in enumerate(options):
             for tem_value in re.split(r"\s+", option["content"].strip()):
                 tem_map[tem_value] = index
-        for word in usage:
+        for word in phrase:
             if len(result) == 0 or tem_map[result[len(result) - 1]] != tem_map.get(word):
                 result.append(word)
             else:
@@ -236,31 +236,31 @@ class AnswerPattern1(IOrigin):
         return ",".join(result)
 
     @staticmethod
-    def answer_32_2(options: list, usage: list) -> str:
-        for index, value in enumerate(usage):
+    def answer_32_2(options: list, phrase: list) -> str:
+        for index, value in enumerate(phrase):
             for v in options:
-                if value == AnswerPattern1.process_option_usage(v["content"]):
-                    usage[index] = v["content"]
-        return ",".join(usage)
+                if value == AnswerPattern1.process_option_phrase(v["content"]):
+                    phrase[index] = v["content"]
+        return ",".join(phrase)
 
     @staticmethod
     def answer_51(option_word: str, word: str) -> str:
         return word.replace(option_word.replace("{", "").replace("}", ""), "")
 
     @staticmethod
-    def answer_51_1(answer: dict, remark: str, skip_times: int, usage_list: list, usage_list_set: Set, adapter) -> str:
-        if len(usage_list) <= 1:
+    def answer_51_1(answer: dict, remark: str, skip_times: int, phrase_list: list, phrase_list_set: Set, adapter) -> str:
+        if len(phrase_list) <= 1:
             return None
         for key, value in answer.items():
             for content_list in value["content"]:
-                usages = content_list["usage"].get(remark)\
-                         or adapter.usage_get_remark(content_list["usage"], remark)
-                if usages is not None:
-                    for usage in usages:
-                        if abs(len(usage) - len(usage_list)) != 1:
+                phrases = content_list["phrase"].get(remark)\
+                         or adapter.phrase_get_remark(content_list["phrase"], remark)
+                if phrases is not None:
+                    for phrase in phrases:
+                        if abs(len(phrase) - len(phrase_list)) != 1:
                             continue
-                        max_set = Set(usage)
-                        min_set = usage_list_set
+                        max_set = Set(phrase)
+                        min_set = phrase_list_set
                         if len(max_set) < len(min_set):
                             tem = max_set
                             max_set = min_set
@@ -334,7 +334,7 @@ class AnswerPattern4(IOrigin):
 class AnswerPattern5(IOrigin):
 
     @staticmethod
-    def usage_get_remark(usage_dict: dict, remark: str) -> list:
+    def phrase_get_remark(phrase_dict: dict, remark: str) -> list:
         is_more = re.compile(r"(.*…)\s(…[^a-zA-Z]*)")
         if is_more.match(remark) is None:
             matcher = re.match(r"([0-9A-Za-z.\s(){}'/&‘’,（）…-]*)?\s(.*)", remark)
@@ -342,7 +342,7 @@ class AnswerPattern5(IOrigin):
             matcher = re.match(r"([0-9A-Za-z.\s(){}'/&‘’,（）…-]*)?\s(….*)", remark)
         if matcher is None:
             return None
-        return usage_dict.get(matcher.group(2).strip())
+        return phrase_dict.get(matcher.group(2).strip())
 
 
 # 21.3.25修复由群友224***087提交的BUG
@@ -376,41 +376,41 @@ class AnswerPattern7(IOrigin):
 class AnswerPattern8(IOrigin):
 
     @staticmethod
-    def answer_51_1(answer: dict, remark: str, skip_times: int, usage_list: list, usage_list_set: Set, adapter) -> str:
-        if len(usage_list) <= 1:
+    def answer_51_1(answer: dict, remark: str, skip_times: int, phrase_list: list, phrase_list_set: Set, adapter) -> str:
+        if len(phrase_list) <= 1:
             return None
         remark_set = set(adapter.process_option_mean(remark))
         for key, value in answer.items():
             for content_list in value["content"]:
                 if len(set(adapter.process_word_mean(content_list["mean"])) & remark_set) != 0:
-                    usages = content_list["usage"].get(remark) \
-                             or adapter.usage_get_remark(content_list["usage"], remark)
-                    for usage in usages:
-                        if len(usage_list) - 1 != len(usage_list_set & Set(usage)) \
-                                or len(usage_list) != len(usage):
+                    phrases = content_list["phrase"].get(remark) \
+                             or adapter.phrase_get_remark(content_list["phrase"], remark)
+                    for phrase in phrases:
+                        if len(phrase_list) - 1 != len(phrase_list_set & Set(phrase)) \
+                                or len(phrase_list) != len(phrase):
                             continue
-                        for index, word in enumerate(usage):
-                            if word != usage_list[index]:
+                        for index, word in enumerate(phrase):
+                            if word != phrase_list[index]:
                                 if skip_times != 0:
                                     skip_times -= 1
                                     continue
-                                return usage[index]
+                                return phrase[index]
 
     @staticmethod
-    def answer_51_2(answer: dict, remark: str, skip_times: int, usage_list: list, usage_list_set: Set, adapter) -> str:
-        if len(usage_list) <= 1:
+    def answer_51_2(answer: dict, remark: str, skip_times: int, phrase_list: list, phrase_list_set: Set, adapter) -> str:
+        if len(phrase_list) <= 1:
             return None
         for key, value in answer.items():
             for content_list in value["content"]:
-                usages = content_list["usage"].get(remark) \
-                         or adapter.usage_get_remark_by_ratio(content_list["usage"],
-                                                              adapter.process_option_mean(remark))
-                if usages is not None:
-                    for usage in usages:
-                        if abs(len(usage) - len(usage_list)) != 1:
+                phrases = content_list["phrase"].get(remark) \
+                         or adapter.phrase_get_remark_by_ratio(content_list["phrase"],
+                                                               adapter.process_option_mean(remark))
+                if phrases is not None:
+                    for phrase in phrases:
+                        if abs(len(phrase) - len(phrase_list)) != 1:
                             continue
-                        max_set = Set(usage)
-                        min_set = usage_list_set
+                        max_set = Set(phrase)
+                        min_set = phrase_list_set
                         if len(max_set) < len(min_set):
                             tem = max_set
                             max_set = min_set

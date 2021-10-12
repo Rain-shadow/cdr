@@ -173,35 +173,35 @@ class Answer:
         _logger.d(f"{blank_count:d}")
         # 选项预处理
         option_list = []  # 存放选项中的短语，短语由规定顺序的单词数组构成
-        for usage in options:
-            content, _ = adapter.process_content_and_remark(usage["content"], None)
+        for phrase in options:
+            content, _ = adapter.process_content_and_remark(phrase["content"], None)
             _logger.d(content, is_show=False)
-            option_list.extend(re.split(r"\s+", adapter.process_option_usage(content)))
+            option_list.extend(re.split(r"\s+", adapter.process_option_phrase(content)))
         _logger.d(option_list, is_show=False)
         option_set = Set(option_list)
         wrong_set = set()
 
         for key, value in self._course.data.items():
             for content in value["content"]:
-                usage_list = content["usage"].get(remark) or adapter.usage_get_remark(content["usage"], remark)
-                if usage_list is not None:
-                    _logger.d(usage_list, is_show=False)
-                    for usage in usage_list:
-                        if len(option_set & Set(usage)) == len(usage):
-                            if skip_times != 0 or adapter.answer_32_2(options, usage) in wrong_set:
+                phrase_list = content["phrase"].get(remark) or adapter.phrase_get_remark(content["phrase"], remark)
+                if phrase_list is not None:
+                    _logger.d(phrase_list, is_show=False)
+                    for phrase in phrase_list:
+                        if len(option_set & Set(phrase)) == len(phrase):
+                            if skip_times != 0 or adapter.answer_32_2(options, phrase) in wrong_set:
                                 skip_times -= 1
-                                wrong_set.add(adapter.answer_32_2(options, usage))
+                                wrong_set.add(adapter.answer_32_2(options, phrase))
                                 continue
-                            if len(usage) == blank_count:
+                            if len(phrase) == blank_count:
                                 # 因原选项中可能会出现多出空格问题
-                                return adapter.answer_32_2(options, usage)
+                                return adapter.answer_32_2(options, phrase)
                             # 修复题库中同时存在
                             # "迫切需要": ["an", "urgent", "need"]
                             # "迫切需要": ["urgent", "need"]
                             # 导致的答案匹配出错，该BUG由群友183***092提供，156行为其贡献
-                            if len(usage) > blank_count:
+                            if len(phrase) > blank_count:
                                 # 下列情况为一个选项中存在多个单词（说好的一个单词一个选项呢？？？）
-                                result = adapter.answer_32_1(options, usage)
+                                result = adapter.answer_32_1(options, phrase)
                                 if result:
                                     return result
         raise AnswerNotFoundException(32)
@@ -277,12 +277,12 @@ class Answer:
         _logger.d(content)
         _logger.d(remark)
         content, remark = adapter.process_content_and_remark(content, remark)
-        usage_list = adapter.process_option_usage(content).split(" ")
-        usage_list_set = Set(usage_list)
-        _logger.d(usage_list)
+        phrase_list = adapter.process_option_phrase(content).split(" ")
+        phrase_list_set = Set(phrase_list)
+        _logger.d(phrase_list)
         remark_set = set(adapter.process_option_mean(remark))
         for key, value in self._course.data.items():
-            if len(usage_list) == 1:
+            if len(phrase_list) == 1:
                 for i in value["content"]:
                     if len(remark_set & set(adapter.process_word_mean(i["mean"]))) != 0:
                         if skip_times != 0:
@@ -291,27 +291,27 @@ class Answer:
                         return key
             else:
                 for content_list in value["content"]:
-                    usages = content_list["usage"].get(remark)\
-                             or adapter.usage_get_remark(content_list["usage"], remark)
-                    if usages is not None:
-                        _logger.d(usages)
-                        for usage in usages:
+                    phrases = content_list["phrase"].get(remark)\
+                             or adapter.phrase_get_remark(content_list["phrase"], remark)
+                    if phrases is not None:
+                        _logger.d(phrases)
+                        for phrase in phrases:
                             # 修复长度判断，该bug由群友169***762提供
-                            if len(usage_list) - 1 != len(usage_list_set & Set(usage))\
-                                    or len(usage_list) != len(usage):
+                            if len(phrase_list) - 1 != len(phrase_list_set & Set(phrase))\
+                                    or len(phrase_list) != len(phrase):
                                 continue
-                            for index, word in enumerate(usage):
-                                if word != usage_list[index]:
+                            for index, word in enumerate(phrase):
+                                if word != phrase_list[index]:
                                     if skip_times != 0:
                                         skip_times -= 1
                                         continue
-                                    # 原本只需返回usage[index]即可
+                                    # 原本只需返回phrase[index]即可
                                     # 但因兼容CET4_3的at one's {}'s end(智穷力竭)特殊案例，不得不复杂化
-                                    return adapter.answer_51(usage_list[index], usage[index])
-        vague_answer = adapter.answer_51_1(self._course.data, remark, skip_times, usage_list, usage_list_set)
+                                    return adapter.answer_51(phrase_list[index], phrase[index])
+        vague_answer = adapter.answer_51_1(self._course.data, remark, skip_times, phrase_list, phrase_list_set)
         if vague_answer:
             return vague_answer
-        vague_answer = adapter.answer_51_2(self._course.data, remark, skip_times, usage_list, usage_list_set)
+        vague_answer = adapter.answer_51_2(self._course.data, remark, skip_times, phrase_list, phrase_list_set)
         if vague_answer:
             return vague_answer
         raise AnswerNotFoundException(51)

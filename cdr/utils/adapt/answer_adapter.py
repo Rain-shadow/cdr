@@ -36,15 +36,15 @@ class AnswerAdapter:
         return False
 
     # 无则返回None
-    def usage_get_remark(self, usage_dict: dict, remark: str) -> list:
+    def phrase_get_remark(self, phrase_dict: dict, remark: str) -> list:
         for cls in self.__interfaces:
-            result = cls.usage_get_remark(usage_dict, remark)
+            result = cls.phrase_get_remark(phrase_dict, remark)
             if result:
                 return result
 
-    def usage_get_remark_by_ratio(self, usage_dict: dict, remark_list: list, ratio: float = 0.6) -> list:
+    def phrase_get_remark_by_ratio(self, phrase_dict: dict, remark_list: list, ratio: float = 0.6) -> list:
         for cls in self.__interfaces:
-            result = cls.usage_get_remark_by_ratio(usage_dict, remark_list, ratio, self)
+            result = cls.phrase_get_remark_by_ratio(phrase_dict, remark_list, ratio, self)
             if result:
                 return result
 
@@ -72,11 +72,11 @@ class AnswerAdapter:
                 return result
         return sentence
 
-    # 无则返回usage
-    def process_option_usage(self, usage: str) -> str:
-        result = usage
+    # 无则返回phrase
+    def process_option_phrase(self, phrase: str) -> str:
+        result = phrase
         for cls in self.__interfaces:
-            result = cls.process_option_usage(result)
+            result = cls.process_option_phrase(result)
         return result
 
     # 无则返回None
@@ -109,16 +109,16 @@ class AnswerAdapter:
                 return result
 
     # 无则返回None
-    def answer_32_1(self, options: list, usage: list) -> str:
+    def answer_32_1(self, options: list, phrase: list) -> str:
         for cls in self.__interfaces:
-            result = cls.answer_32_1(options, usage)
+            result = cls.answer_32_1(options, phrase)
             if result:
                 return result
 
     # 无则返回None
-    def answer_32_2(self, options: list, usage: list) -> str:
+    def answer_32_2(self, options: list, phrase: list) -> str:
         for cls in self.__interfaces:
-            result = cls.answer_32_2(options, usage)
+            result = cls.answer_32_2(options, phrase)
             if result:
                 return result
 
@@ -131,15 +131,15 @@ class AnswerAdapter:
         return word
 
     # 无则返回None
-    def answer_51_1(self, answer: dict, remark: str, skip_times: int, usage_list: list, usage_list_set: Set) -> str:
+    def answer_51_1(self, answer: dict, remark: str, skip_times: int, phrase_list: list, phrase_list_set: Set) -> str:
         for cls in self.__interfaces:
-            result = cls.answer_51_1(answer, remark, skip_times, usage_list, usage_list_set, self)
+            result = cls.answer_51_1(answer, remark, skip_times, phrase_list, phrase_list_set, self)
             if result:
                 return result
 
     # 无则返回None
-    def answer_51_2(self, answer: dict, remark: str, skip_times: int, usage_list: list, usage_list_set: Set) -> str:
+    def answer_51_2(self, answer: dict, remark: str, skip_times: int, phrase_list: list, phrase_list_set: Set) -> str:
         for cls in self.__interfaces:
-            result = cls.answer_51_2(answer, remark, skip_times, usage_list, usage_list_set, self)
+            result = cls.answer_51_2(answer, remark, skip_times, phrase_list, phrase_list_set, self)
             if result:
                 return result
