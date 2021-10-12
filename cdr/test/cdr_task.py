@@ -66,6 +66,12 @@ class CDRTask:
             data["list_id"] = task["list_id"]
         res = await requests.get(f"https://gateway.vocabgo.com/Student/{self.task_type}/Info",
                                  params=data, headers=settings.header, timeout=settings.timeout)
+        if task["task_id"] == -1:
+            data["task_id"] = (await res.json())["data"]["task_id"]
+            data["timestamp"] = Tool.time()
+            res.close()
+            res = await requests.get(f"https://gateway.vocabgo.com/Student/{self.task_type}/Info",
+                                     params=data, headers=settings.header, timeout=settings.timeout)
         json_data = (await res.json())["data"]["word_list"]
         res.close()
         word_list = []
