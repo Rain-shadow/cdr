@@ -102,6 +102,18 @@ class AnswerAdapter:
                 return result
 
     # 无则返回None
+    def answer_15_2(self, answer_list: list, options: list) -> str:
+        result = None
+        for cls in self.__interfaces:
+            result_tuple = cls.answer_15_2(answer_list, options, self)
+            if result is None:
+                result = result_tuple
+            elif result_tuple and result[1] <= result_tuple[1]:
+                result = result_tuple
+        if result is not None:
+            return result[0]
+
+    # 无则返回None
     def answer_17_1(self, content_list: list, options: list, answer_list: list) -> str:
         for cls in self.__interfaces:
             result = cls.answer_17_1(content_list, options, answer_list, self)

@@ -106,7 +106,13 @@ class Answer:
         for mean in options:
             if len(tem_set & set(adapter.process_option_mean(mean["content"]))) != 0:
                 return str(mean["answer_tag"])
+        tem_list = list(tem_set)
         vague_answer = adapter.answer_15_1(tem_list, options)
+        if vague_answer:
+            return vague_answer
+        _logger.w("高危适配选项将被启用！！！", is_show=False)
+        vague_answer = adapter.answer_15_2(tem_list, options)
+        _logger.w(vague_answer, is_show=False)
         if vague_answer:
             return vague_answer
         raise AnswerNotFoundException(15)

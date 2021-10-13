@@ -71,6 +71,12 @@ class IOrigin:
     def answer_15_1(answer_list: list, options: list, adapter) -> str:
         pass
 
+    # 处理题型15中模糊匹配失败的情况
+    # 选项4个选项中可信度最高的作为返回值
+    @staticmethod
+    def answer_15_2(answer_list: list, options: list, adapter) -> tuple[str, float]:
+        pass
+
     # 处理题型17中精确匹配失败的情况
     # 为选项翻译添加模糊匹配
     @staticmethod
@@ -207,6 +213,18 @@ class AnswerPattern1(IOrigin):
                                                    answer_list
                                                    ) >= 0.65:
                 return str(mean["answer_tag"])
+
+    @staticmethod
+    def answer_15_2(answer_list: list, options: list, adapter) -> tuple[str, float]:
+        result = None
+        for mean in options:
+            option_mean = re.sub(r"^[a-zA-Z]+\s?", "", mean["content"])
+            trust_ratio = Tool.get_ratio_between_list(adapter.process_option_mean(option_mean), answer_list)
+            if result is None:
+                result = (mean["answer_tag"], trust_ratio)
+            elif result[1] <= trust_ratio:
+                result = (mean["answer_tag"], trust_ratio)
+        return result
 
     @staticmethod
     def answer_17_1(content_list: list, options: list, answer_dict: dict, adapter) -> str:
