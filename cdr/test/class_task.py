@@ -289,7 +289,9 @@ class ClassTask(CDRTask):
         word_map = {}
         for word in json_data['data']['word_list']:
             if word['score'] != 10:
-                tem_str = course_id + ':' + word["list_id"]
+                # 为何要多次一举不直接使用参数course_id呢
+                # 那是因为自建词表任务中course_id恒为course_self，与实际情况不一致
+                tem_str = word["course_id"] + ':' + word["list_id"]
                 if word_map.get(tem_str) is None:
                     word_map[tem_str] = []
                 word_map[tem_str].append(word['word'])
