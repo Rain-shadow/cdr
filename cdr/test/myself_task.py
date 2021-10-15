@@ -348,9 +348,9 @@ class MyselfTask(CDRTask):
                 json_data = await CDRTask.skip_answer(json_data["data"]["topic_code"],
                                                       json_data["data"]["topic_mode"], "StudyTask")
             else:
-                json_data = await self.find_answer_and_finish(answer, json_data["data"], 0, task_id)
+                json_data = await self.find_answer_and_finish(answer, json_data["data"], task_id)
         else:
-            json_data = await self.find_answer_and_finish(answer, json_data["data"], 0, task_id)
+            json_data = await self.find_answer_and_finish(answer, json_data["data"], task_id)
         #   每10道题清理一次gc
         if json_data.get("data") is None:
             _logger.e(json_data, is_show=False)

@@ -187,6 +187,12 @@ class ClassTask(CDRTask):
                     if settings.is_multiple_chapter:
                         self.update_progress(str(release_id), json_data["data"]["topic_done_num"])
                     json_data = await self.do_question(answer, json_data, release_id, now_score, task_id)
+                    if json_data["code"] == 0 and json_data["msg"].find("返回首页重新加载") != -1:
+                        _logger.w("意外的返回情况")
+                        _logger.w(json_data["msg"])
+                        _logger.w("本次任务稍后将重新开始")
+                        count = count - 1
+                        break
                 if is_show:
                     _logger.i(f"【{task['task_name']}】已完成。分数：{await ClassTask.get_class_task_score(release_id)}")
                 else:
@@ -407,9 +413,9 @@ class ClassTask(CDRTask):
                                                       json_data["data"]["topic_mode"],
                                                       "ClassTask")
             else:
-                json_data = await self.find_answer_and_finish(answer, json_data["data"], 1, task_id)
+                json_data = await self.find_answer_and_finish(answer, json_data["data"], task_id)
         else:
-            json_data = await self.find_answer_and_finish(answer, json_data["data"], 1, task_id)
+            json_data = await self.find_answer_and_finish(answer, json_data["data"], task_id)
         #   每10道题清理一次gc
         if json_data.get("data") is None:
             _logger.e(json_data, is_show=False)

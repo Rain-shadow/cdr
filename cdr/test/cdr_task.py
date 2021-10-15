@@ -8,7 +8,7 @@ import asyncio
 import sys
 import random
 from cdr.aio import aiorequset as requests, Tasks
-from cdr.exception import AnswerNotFoundException, AnswerWrong
+from cdr.exception import AnswerNotFoundException, AnswerWrong, LoadTaskInfoError
 from cdr.utils import settings, Answer, Course, Log, Tool
 from cdr.eprogress import LineProgress, MultiProgressManager
 from cdr.config import CDR_VERSION, LOG_DIR_PATH
@@ -72,14 +72,17 @@ class CDRTask:
             res.close()
             res = await requests.get(f"https://gateway.vocabgo.com/Student/{self.task_type}/Info",
                                      params=data, headers=settings.header, timeout=settings.timeout)
-        json_data = (await res.json())["data"]["word_list"]
+        json_data = (await res.json())
+        if json_data["code"] != 1:
+            raise LoadTaskInfoError(json_data["msg"])
+        json_data = json_data["data"]["word_list"]
         res.close()
         word_list = []
         for word_info in json_data:
             word_list.append((word_info["course_id"], word_info["list_id"], word_info["word"]))
         return word_list
 
-    async def find_answer_and_finish(self, answer: Answer, data: dict, type_id: int, task_id: int) -> dict:
+    async def find_answer_and_finish(self, answer: Answer, data: dict, task_id: int) -> dict:
         is_show = not settings.is_multiple_chapter
         content = data["stem"]["content"]
         remark = data["stem"]["remark"]
