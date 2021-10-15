@@ -87,6 +87,16 @@ class ClassTask(CDRTask):
         time_out = settings.timeout
         is_random_score = settings.is_random_score
         is_show = not settings.is_multiple_chapter
+        if task['free'] != 1:
+            _logger.w("该任务疑似收费，你可能未开通对应课程权限或权限已到期")
+            _logger.w("若你在公众号可以正常进入此任务，可以按回车继续任务运行，期间可能会出现意料之外的情况")
+            _logger.v()
+            _logger.i("若想跳过该任务，请按Ctrl+C")
+            _logger.v()
+            try:
+                input("按回车继续")
+            except KeyboardInterrupt:
+                return
         if task['over_status'] == 2:
             task_type = task["task_type"]
             release_id = task["release_id"]
@@ -191,7 +201,6 @@ class ClassTask(CDRTask):
                         _logger.w("意外的返回情况")
                         _logger.w(json_data["msg"])
                         _logger.w("本次任务稍后将重新开始")
-                        count = count - 1
                         break
                 if is_show:
                     _logger.i(f"【{task['task_name']}】已完成。分数：{await ClassTask.get_class_task_score(release_id)}")
