@@ -89,10 +89,8 @@ class ClassTask(CDRTask):
         is_show = not settings.is_multiple_chapter
         if task['free'] != 1:
             _logger.w("该任务疑似收费，你可能未开通对应课程权限或权限已到期")
-            _logger.w("若你在公众号可以正常进入此任务，可以按回车继续任务运行，期间可能会出现意料之外的情况")
-            _logger.v()
-            _logger.i("若想跳过该任务，请按Ctrl+C")
-            _logger.v()
+            _logger.w("若你在公众号可以正常进入此任务，可以按回车继续任务运行，期间可能会出现意料之外的情况\n")
+            _logger.i("若想跳过该任务，请按Ctrl+C\n")
             try:
                 input("按回车继续")
             except KeyboardInterrupt:
@@ -140,7 +138,7 @@ class ClassTask(CDRTask):
                 if task_type == 1:
                     #   判断是否需要选词
                     try:
-                        if json_data["code"] == 20001 and await ClassTask.choose_word(course_id, task_id, task_type):
+                        if json_data["code"] == 20001 and await ClassTask.choose_word(task_id, task_type):
                             break
                     except NoPermission as e:
                         _logger.w(e)
@@ -289,7 +287,7 @@ class ClassTask(CDRTask):
         return task["task_id"]
 
     @staticmethod
-    async def choose_word(course_id: str, task_id: int, task_type: int) -> bool:
+    async def choose_word(task_id: int, task_type: int) -> bool:
         is_show = not settings.is_multiple_chapter
         time_out = settings.timeout
         _logger.i("需要选词", is_show=is_show)
@@ -314,23 +312,23 @@ class ClassTask(CDRTask):
             _logger.i("当前学习任务已完成", is_show=is_show)
             return True
         _logger.i(word_map, is_show=False)
-        tem_i = 0
-        tem_len = 0
+        index = 0
+        word_map_len = 0
         for k in word_map:
-            tem_len += len(word_map[k])
-        while tem_len < 5:
-            tem_o = json_data['data']['word_list'][tem_i]
-            tem_str = course_id + ':' + tem_o["list_id"]
-            if tem_o['word'] not in word_map[tem_str]:
+            word_map_len += len(word_map[k])
+        while word_map_len < 5:
+            word = json_data['data']['word_list'][index]
+            tem_str = word["course_id"] + ':' + word["list_id"]
+            if word['word'] not in word_map[tem_str]:
                 if word_map.get(tem_str) is None:
                     word_map[tem_str] = []
-                word_map[tem_str].append(tem_o['word'])
-                _logger.i(f"单词复选：{tem_o['word']}", is_show=False)
-            tem_i = tem_i + 1
+                word_map[tem_str].append(word['word'])
+                _logger.i(f"单词复选：{word['word']}", is_show=False)
+            index = index + 1
 
-            tem_len = 0
+            word_map_len = 0
             for k in word_map:
-                tem_len += len(word_map[k])
+                word_map_len += len(word_map[k])
         _logger.i(word_map, is_show=False)
         timestamp = Tool.time()
         sign = Tool.md5(f'task_id={task_id}&timestamp={timestamp}&versions={CDR_VERSION}&word_map='
