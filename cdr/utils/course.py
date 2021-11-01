@@ -65,6 +65,8 @@ class Course:
         :param words: 设置该参数将仅加载指定的单词作为题库查询依据
         :return:
         """
+        # 不加这行会导致某些情况下身份授权出现问题
+        cls.__HEADERS["UserToken"] = _settings.user_token
         result = Course(cls.__CREATE_KEY)
         await result._load_answer(course_id, words)
         return result
