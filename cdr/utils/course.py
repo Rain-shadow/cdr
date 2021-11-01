@@ -17,6 +17,7 @@ from .setting import _settings
 from .log import Log
 from .tool import Tool
 from cdr.config import CDR_VERSION, DATA_DIR_PATH
+from cdr.request.network_error import NetworkError
 
 _settings = _settings
 _logger = Log.get_logger()
@@ -204,7 +205,8 @@ class Course:
         :return:
         """
         result = []
-        if course_id == course_id:
+        try:
+            # 一次性获取对应课程下的所有单词
             res = await requests.get(f"https://resource.vocabgo.com/Resource/CoursePage/{course_id}.json",
                                      timeout=_settings.timeout)
             json_data = await res.json()
@@ -212,25 +214,27 @@ class Course:
             for word_info in json_data:
                 result.append((word_info["course_id"], word_info["list_id"], word_info["word"]))
             return result
-        #   获取课程所有列表
-        data = {
-            "course_id": course_id,
-            "timestamp": Tool.time(),
-            "versions": CDR_VERSION
-        }
-        res = await requests.get("https://gateway.vocabgo.com/Teacher/Course/UnitList",
-                                 params=data, headers=cls.__HEADERS, timeout=_settings.timeout)
-        json_data = await res.json()
-        json_data = json_data["data"]["course_list_info_list"]
-        res.close()
-        task_list = []
-        for m_list in json_data:
-            task_list.append(cls._get_words_by_course_chapter(course_id, m_list["list_id"]))
-        # noinspection PyTypeChecker
-        results: list = await asyncio.gather(*task_list)
-        for item in results:
-            result.extend(item)
-        return result
+        except NetworkError:
+            # 多次网络请求（先获取对应课程的列表，再获取列表下的单词）
+            # 获取课程所有列表
+            data = {
+                "course_id": course_id,
+                "timestamp": Tool.time(),
+                "versions": CDR_VERSION
+            }
+            res = await requests.get("https://gateway.vocabgo.com/Teacher/Course/UnitList",
+                                     params=data, headers=cls.__HEADERS, timeout=_settings.timeout)
+            json_data = await res.json()
+            json_data = json_data["data"]["course_list_info_list"]
+            res.close()
+            task_list = []
+            for m_list in json_data:
+                task_list.append(cls._get_words_by_course_chapter(course_id, m_list["list_id"]))
+            # noinspection PyTypeChecker
+            results: list = await asyncio.gather(*task_list)
+            for item in results:
+                result.extend(item)
+            return result
 
     @classmethod
     async def _get_words_by_course_chapter(cls, course_id: str, list_id: str) -> list[tuple[str, str, str]]:
