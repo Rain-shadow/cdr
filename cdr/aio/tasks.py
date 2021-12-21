@@ -5,15 +5,18 @@
 # @Author: 佚名
 # @File  : tasks.py
 import asyncio
+import sys
 
 
 class Tasks:
 
     def __init__(self, max_async, loop=None):
-        #self.loop = loop or asyncio.get_event_loop()
-        self.loop = asyncio.get_event_loop()
-        #self._queue = asyncio.Queue(maxsize=100, loop=self.loop)
-        self._queue = asyncio.Queue(maxsize=100) #3.10之后的Python不需要loop参数
+        if sys.version_info > (3, 10):
+            self.loop = asyncio.get_event_loop()
+            self._queue = asyncio.Queue(maxsize=100) #3.10之后的Python不需要loop参数
+        else:
+            self.loop = loop or asyncio.get_event_loop()
+            self._queue = asyncio.Queue(maxsize=100, loop=self.loop)
         self.max_async = max_async
         self.work_list = []
 
