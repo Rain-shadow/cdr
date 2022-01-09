@@ -9,7 +9,6 @@
 ##### 或者使用以下指令
 `pip install Pillow qrcode requests aiohttp -i https://mirrors.aliyun.com/pypi/simple/`
 ##### 在确保你已经安装好相关第三方库后，使用`python main.py`执行
-##### Release中不再提供打包好的exe文件，若有需要请自行审查代码并打包编译
 > 欢迎提交Issues来帮助我更好的完善此项目
 
 ##### 不会支持的功能
