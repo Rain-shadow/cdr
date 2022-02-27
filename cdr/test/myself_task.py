@@ -26,6 +26,10 @@ class MyselfTask(CDRTask):
     async def run(self):
         self.task_type = "StudyTask"
         course_id = self.__course_id
+        if course_id is None:
+            _logger.i("你还没有选择课程，请进入微信词达人选择自选课程后重试")
+            input("按回车键返回上一级")
+            return
         task_list, json_data = await MyselfTask.get_task_list(course_id)
         Tool.cls()
         while True:
