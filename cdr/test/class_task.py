@@ -319,9 +319,9 @@ class ClassTask(CDRTask):
         while word_map_len < 5:
             word = json_data['data']['word_list'][index]
             tem_str = word["course_id"] + ':' + word["list_id"]
+            if word_map.get(tem_str) is None:
+                word_map[tem_str] = []
             if word['word'] not in word_map[tem_str]:
-                if word_map.get(tem_str) is None:
-                    word_map[tem_str] = []
                 word_map[tem_str].append(word['word'])
                 _logger.i(f"单词复选：{word['word']}", is_show=False)
             index = index + 1
