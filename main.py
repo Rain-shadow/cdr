@@ -12,9 +12,6 @@ import os
 import sys
 
 
-_logger = Log.get_logger()
-
-
 def version():
     return cdr_version
 
@@ -22,11 +19,14 @@ def version():
 if __name__ == '__main__':
     if len(sys.argv[1:]) != 0 and sys.argv[1:][0] == "-v":
         print(version())
+        from cdr.aio import aiorequset
+        aiorequset.close_session()
         sys.exit(0)
+
     kernel32 = ctypes.windll.kernel32
     kernel32.SetConsoleMode(kernel32.GetStdHandle(-10), 128)
     os.system(f'title 词达人-v{cdr_version}')
     hook_except()
-    _logger.i(f"词达人版本：{cdr_version}", is_show=False)
+    Log.get_logger().i(f"词达人版本：{cdr_version}", is_show=False)
     do_homework()
     sys.exit(0)
