@@ -204,7 +204,7 @@ class ClassTask(CDRTask):
                     _logger.i(f"【{task['task_name']}】已完成。分数：{await ClassTask.get_class_task_score(release_id)}")
                 else:
                     self.finish_progress(str(release_id), f"分数：{await ClassTask.get_class_task_score(release_id)}")
-                if json_data["code"] == 20004:
+                if json_data["code"] == 20004 or json_data["code"] == 20001:
                     break
                 if now_score <= await ClassTask.get_class_task_score(release_id):
                     break

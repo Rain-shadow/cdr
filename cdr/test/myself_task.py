@@ -182,7 +182,7 @@ class MyselfTask(CDRTask):
                 else:
                     self.finish_progress(task['list_id'],
                                          f"分数：{await MyselfTask.get_myself_task_score(course_id, task['list_id'])}")
-                if json_data["code"] == 20004:
+                if json_data["code"] == 20004 or json_data["code"] == 20001:
                     break
                 if now_score <= await MyselfTask.get_myself_task_score(course_id, task['list_id']):
                     break
