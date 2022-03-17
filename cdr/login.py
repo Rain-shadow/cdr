@@ -22,27 +22,19 @@ class Login:
         Tool.cls()
         if settings.user_token != "0" and settings.user_token != "":
             _logger.i("尝试复用token")
-            res = requests.get(url='https://gateway.vocabgo.com/Student/Main?timestamp={}&versions={}'
-                               .format(Tool.time(), CDR_VERSION), headers=settings.header)
-            code = res.json()["code"]
-            res.close()
-            if code == 1:
+            if Login.is_user_token_valid(settings.user_token):
                 _logger.i("授权成功")
                 _logger.i("user_token:" + settings.user_token, is_show=False)
                 return
             else:
                 _logger.i("曾用token已失效，重新执行授权流程！")
         Login._generate_qr_code()
-        res = requests.get(url='https://gateway.vocabgo.com/Student/Main?timestamp={}&versions={}'
-                           .format(Tool.time(), CDR_VERSION), headers=settings.header)
-        code = res.json()["code"]
-        res.close()
         count = 0
-        while code != 1:
+        while not Login.is_user_token_valid(settings.user_token):
             _logger.i("等待授权中......")
             count = count + 1
-            time.sleep(5)
-            if count == 6:
+            time.sleep(3)
+            if count == 5:
                 count = 0
                 _logger.v("1. 继续等待\n2. 重新生成二维码\n\n0. 返回上一级")
                 code_type = input("请输入指令：")
@@ -55,14 +47,26 @@ class Login:
                     return
                 else:
                     sys.exit(0)
-            res = requests.get(url='https://gateway.vocabgo.com/Student/Main?timestamp={}&versions={}'
-                               .format(Tool.time(), CDR_VERSION), headers=settings.header)
-            code = res.json()["code"]
-            res.close()
         _logger.i("授权成功")
         os.remove(f"{CONFIG_DIR_PATH}授权二维码.jpg")
         settings.save()
         return
+
+    @staticmethod
+    def is_user_token_valid(user_token: str) -> bool:
+        """
+        判断指定的user_token是否仍然有效
+        :param user_token: 用户的身份标识
+        :return: true:有效，false:无效
+        """
+        # 因为settings.header中的key/value全部为str类型，故采取字典本身的浅拷贝即可
+        headers = settings.header.copy()
+        headers["UserToken"] = user_token
+        res = requests.get(url='https://gateway.vocabgo.com/Student/Main?timestamp={}&versions={}'
+                           .format(Tool.time(), CDR_VERSION), headers=headers)
+        code = res.json()["code"]
+        res.close()
+        return code == 1
 
     @staticmethod
     def _generate_qr_code():
@@ -76,6 +80,9 @@ class Login:
             index = random.randint(0, len(pass_list) - 1)
             user_token += pass_list[index]
         user_token = Tool.md5(f"{user_token}{Tool.time()}")
+        # 有可能生成的user_token已经被占用，故在此需进行检测
+        while Login.is_user_token_valid(user_token):
+            user_token = Tool.md5(f"{user_token}{Tool.time()}")
         # 生成token认证连接
         sign = Tool.md5(f'auth_type=1&return_url=https://app.vocabgo.com/overall/#/student/home&timestamp={now_time}'
                         + f'&user_token={user_token}&versions={CDR_VERSION}ajfajfamsnfaflfasakljdlalkflak')
