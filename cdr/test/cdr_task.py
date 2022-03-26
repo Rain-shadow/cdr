@@ -64,19 +64,24 @@ class CDRTask:
         else:
             data["course_id"] = task["course_id"]
             data["list_id"] = task["list_id"]
+        await asyncio.sleep(0.3)
         res = await requests.get(f"https://gateway.vocabgo.com/Student/{self.task_type}/Info",
                                  params=data, headers=settings.header, timeout=settings.timeout)
+        json_data = (await res.json())
+        res.close()
+        if json_data["code"] != 1:
+            raise LoadTaskInfoError(json_data["msg"])
+        task["task_id"] = json_data["data"]["task_id"]
         if task["task_id"] == -1:
-            data["task_id"] = (await res.json())["data"]["task_id"]
+            data["task_id"] = -1
             data["timestamp"] = Tool.time()
-            res.close()
             res = await requests.get(f"https://gateway.vocabgo.com/Student/{self.task_type}/Info",
                                      params=data, headers=settings.header, timeout=settings.timeout)
-        json_data = (await res.json())
+            json_data = (await res.json())
+            res.close()
         if json_data["code"] != 1:
             raise LoadTaskInfoError(json_data["msg"])
         json_data = json_data["data"]["word_list"]
-        res.close()
         word_list = []
         for word_info in json_data:
             word_list.append((word_info["course_id"], word_info["list_id"], word_info["word"]))
