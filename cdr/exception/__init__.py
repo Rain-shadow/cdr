@@ -10,6 +10,7 @@ from .answer_wrong import AnswerWrong
 from .no_permission import NoPermission
 from .no_support_version import NoSupportVersionException
 from .load_task_info_error import LoadTaskInfoError
+from .unknown_type_mode import UnknownTypeMode
 
 __all__ = ["hook_except", "AnswerNotFoundException", "AnswerWrong", "NoPermission", "NoSupportVersionException",
-           "LoadTaskInfoError"]
+           "LoadTaskInfoError", "UnknownTypeMode"]

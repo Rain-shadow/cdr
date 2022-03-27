@@ -8,7 +8,7 @@ import asyncio
 import sys
 import random
 from cdr.aio import aiorequset as requests, Tasks
-from cdr.exception import AnswerNotFoundException, AnswerWrong, LoadTaskInfoError
+from cdr.exception import AnswerNotFoundException, AnswerWrong, LoadTaskInfoError, UnknownTypeMode
 from cdr.utils import settings, Answer, Course, Log, Tool
 from cdr.eprogress import LineProgress, MultiProgressManager
 from cdr.config import CDR_VERSION, LOG_DIR_PATH
@@ -98,9 +98,6 @@ class CDRTask:
             _logger.v(f"[mode:{topic_mode}]{content}({remark})", end='', is_show=is_show)
         topic_code = data["topic_code"]
         options = data["options"]
-        time_spent = CDRTask.get_random_time(topic_mode, min_time=settings.min_random_time,
-                                             max_time=settings.max_random_time)
-        await asyncio.sleep(time_spent / 1000)
         #   根据获取到的答案与现行答案进行匹配
         skip_times = 0
         has_chance = True
@@ -140,6 +137,10 @@ class CDRTask:
             else:
                 has_chance = False
                 _logger.v("   Done！", is_show=is_show)
+
+        time_spent = CDRTask.get_random_time(topic_mode, min_time=settings.min_random_time,
+                                             max_time=settings.max_random_time)
+        await asyncio.sleep(time_spent / 1000)
         timestamp = Tool.time()
         sign = Tool.md5(f"time_spent={time_spent}&timestamp={timestamp}&topic_code={topic_code}"
                         + f"&versions={CDR_VERSION}ajfajfamsnfaflfasakljdlalkflak")
@@ -198,9 +199,7 @@ class CDRTask:
             elif topic_mode == 53 or topic_mode == 54:
                 answer_id = answer.find_answer_by_53(content, remark)
             else:
-                _logger.w(f"未知题型：{topic_mode}")
-                _logger.create_error_txt()
-                input("等待错误检查（按下回车键键即可继续执行）")
+                raise UnknownTypeMode(topic_mode)
         except AnswerNotFoundException as e:
             _logger.v("")
             _logger.w(f"{e}")
