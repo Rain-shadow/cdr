@@ -9,6 +9,8 @@ import json
 import re
 import os
 from asyncio.exceptions import CancelledError
+from typing import Union
+from urllib.parse import unquote
 
 from cdr.aio import aiorequset as requests
 from cdr.exception import NoPermission, NoSupportVersionException
@@ -88,13 +90,18 @@ class Course:
         # 先排序，再分组。groupby函数才能正常起到分组作用
         for key, group in groupby(sorted(words, key=lambda o: o[0]), key=lambda o: o[0]):
             group_word[key] = list(group)
-            result = Course._get_local_answer(key)
+            result: dict = Course._get_local_answer(key)
             if result is None:
                 need_load.add(key)
                 continue
             _logger.i(f"复用上次本地缓存题库(题库id：{key})", is_show=is_show)
             for _, _, word in group_word[key]:
                 await Course._merger_answer(self.data, word, result[word])
+                result.pop(word)
+            # 版本3中的额外单词必须加载
+            for word, word_info in result.items():
+                if word_info.get("extra"):
+                    await Course._merger_answer(self.data, word, word_info)
         # 不要奇怪一个任务会出现多个课程的情况，《自建词表》它就这尿性
         # task_list = []
         # for course_id in need_load:
@@ -112,7 +119,10 @@ class Course:
         for course_id, list_id, word in (await Course._get_words_by_course_id(course_id)):
             task_list.append(Course._get_word_info_and_dispose(course_id, list_id, word))
         # noinspection PyTypeChecker
-        results: list = await asyncio.gather(*task_list)
+        results_list: list[list] = await asyncio.gather(*task_list)
+        results: list[tuple[str, Union[dict, None], bool]] = []
+        for value in results_list:
+            results.extend(value)
         # 题库合并
         flag = True
         for word, result, is_success in results:
@@ -127,6 +137,11 @@ class Course:
                 await Course._merger_answer(self.data, word, answer[word])
             else:
                 _logger.w(f"警告！单词：{word}({course_id}/{list_id})加载失败，这会导致答案匹配率下降")
+
+        # 版本3中的额外单词必须加载
+        for word, word_info in answer.items():
+            if word_info.get("extra"):
+                await Course._merger_answer(self.data, word, word_info)
         if flag:
             # 题库保存至本地
             with open(DATA_DIR_PATH + course_id, mode='w', encoding='utf-8') as answer_file:
@@ -188,7 +203,7 @@ class Course:
         _lock.release()
 
     @classmethod
-    def _get_local_answer(cls, course_id: str):
+    def _get_local_answer(cls, course_id: str) -> Union[dict, None]:
         if not os.path.exists(DATA_DIR_PATH + course_id):
             return None
         with open(DATA_DIR_PATH + course_id, mode='r', encoding='utf-8') as answer_file:
@@ -264,11 +279,11 @@ class Course:
 
     @classmethod
     async def _get_word_info_and_dispose(cls, course_id: str, list_id: str, word: str, is_second: bool = False) \
-            -> tuple[str, dict, bool]:
+            -> list[tuple[str, Union[dict, None], bool]]:
         """获取对应单词的信息并处理成软件所需的标准格式"""
         asyncio.current_task().set_name(f"{list_id}_{word}")
         try:
-            answer = await cls._get_detail_by_word(course_id, list_id, word)
+            answer_list = await cls._get_detail_by_word(course_id, list_id, word)
         except NoPermission:
             _logger.i(f"[{course_id}/{list_id}]疑似vip课程章节，无权访问，跳过该章节答案加载，本次不会缓存本地词库")
             for task in asyncio.all_tasks():
@@ -281,10 +296,11 @@ class Course:
             _logger.e(f"[{course_id}]答案加载出错，本次不会缓存本地词库")
             for task in asyncio.all_tasks():
                 task.cancel()
-            return word, None, False
+            return [(word, None, False)]
         except CancelledError as e:
-            return word, None, False
+            return [(word, None, False)]
         except Exception as e:
+            _logger.e(e, is_show=False)
             _logger.e(f"File \"{e.__traceback__.tb_frame.f_globals['__file__']}\", line {e.__traceback__.tb_lineno}",
                       is_show=False)
             _logger.w(f"警告！单词：{word}({course_id}/{list_id})加载失败", is_show=False)
@@ -292,11 +308,11 @@ class Course:
             #     _logger.w(f"警告！单词：{word}({course_id}/{list_id})加载失败，稍后软件将会尝试二次加载")
             # else:
             #     _logger.w(f"警告！单词：{word}({course_id}/{list_id})二次加载失败，本次不会缓存本地词库")
-            return word, None, False
+            return [(word, None, False)]
         else:
             if is_second:
                 _logger.d(f"单词：{word}二次加载成功！")
-            return word, answer, True
+            return answer_list
 
     @staticmethod
     def _get_more_phrase(phrase: list, aim_word: str) -> list[list[str]]:
@@ -359,7 +375,7 @@ class Course:
             for v in data["options"]:
                 result.append(v["content"])
             return result
-        elif version == 2:
+        elif version == 2 or version == 3:
             return data["means"]
         raise NoSupportVersionException("答案解析", version)
 
@@ -370,18 +386,20 @@ class Course:
         elif version == 2:
             #   版本2当中将词性与翻译分割成了数组
             return ' '.join(content_data["mean"])
+        elif version == 3:
+            return content_data["mean"][1]
         raise NoSupportVersionException("答案解析", version)
 
     @classmethod
-    def _process_phrase(cls, content_data: dict, version: int) -> list:
+    def _process_phrase(cls, word: str, content_data: dict, version: int) -> list:
         result = []
         if version == 1:
             phrases = content_data["usage"]
-        elif version == 2:
+        elif version == 2 or version == 3:
             phrases = []
-            for mix in content_data["usages"]:
-                phrases.extend(mix["phrases"])
-                phrase = mix["usage"]
+            for usage_data in content_data["usages"]:
+                phrases.extend(usage_data["phrases"])
+                phrase = usage_data["usage"]
                 if phrase is None:
                     continue
                 if len(phrase["eg"]) != 0:
@@ -400,6 +418,11 @@ class Course:
                         "key": phrase["cn"],
                         "value": phrase_value.split(" ")
                     })
+            if version == 3:
+                result.append({
+                    "key": content_data["mean"][1],
+                    "value": unquote(word).split(" ")
+                })
         else:
             raise NoSupportVersionException("答案解析", version)
         for phrase in phrases:
@@ -425,7 +448,7 @@ class Course:
         return result
 
     @staticmethod
-    def _process_example(content_data: dict, version: int) -> list:
+    def _process_example(word: str, content_data: dict, version: int) -> list:
         result = []
         if version == 1:
             for example in content_data["example"]:
@@ -433,21 +456,80 @@ class Course:
                     "key": example["sen_mean_cn"],
                     "value": example["sen_content"]
                 })
-        elif version == 2:
-            for mix in content_data["usages"]:
-                if mix["examples"] is None:
+        elif version == 2 or version == 3:
+            for usage_data in content_data["usages"]:
+                if usage_data["examples"] is None:
                     continue
-                for example in mix["examples"]:
+                for example in usage_data["examples"]:
                     result.append({
                         "key": example["sen_mean_cn"],
                         "value": example["sen_content"]
                     })
+            if version == 3:
+                extra_example_word_list = unquote(word).split(" ")
+                for index, value in enumerate(extra_example_word_list):
+                    tem = extra_example_word_list.copy()
+                    tem.insert(index, "{%s}" % tem.pop(index))
+                    result.append({
+                        "key": content_data["mean"][1],
+                        "value": " ".join(tem)
+                    })
+
         else:
             raise NoSupportVersionException("答案解析", version)
         return result
 
     @classmethod
-    async def _get_detail_by_word(cls, course_id, list_id, word):
+    def _process_extra_word_info(cls, data: dict, version: int) \
+            -> list[tuple[str, Union[dict, None], bool]]:
+        result = []
+        if version < 3:
+            return result
+        elif version == 3:
+            content_data = data["means"]
+            origin_word_list = unquote(data["word"]).split(" ")
+            for content in content_data:
+                word_info_list: list = content["expand_sz"]["sen_words"]
+                phrase_data = {
+                    content["mean"][1]: [origin_word_list]
+                }
+                for word_info in word_info_list:
+                    word: str = word_info["word"]
+                    target_word = Tool.get_most_similar_word_in_list(word, origin_word_list)
+                    answer = {
+                        "content": [],
+                        "extra": True,
+                        "assist": [target_word],
+                    }
+                    tem_dict = {
+                        "mean": '',
+                        "phrase": phrase_data,
+                        "example": {
+                            content["mean"][1]: unquote(data["word"]).replace(target_word, "{%s}" % target_word)
+                        }
+                    }
+                    #   统一词义格式：1.多空格去除为1空格 2.删除中文括号中的附加内容
+                    c_str = word_info["mean_cn"]
+                    while c_str.find("（") != -1:
+                        c_str = c_str[:c_str.find("（")] + c_str[c_str.find("）") + 1:]
+                    tem_dict["mean"] = ' '.join(c_str.split())
+                    for example in word_info["sample"]:
+                        value = example["sen_marked"]
+                        if value is None or len(value) == 0:
+                            continue
+                        tem_dict["example"][example["sen_cn"]] = value
+                        assist_word = value[value.find("{") + 1: value.find("}")]
+                        if assist_word not in answer["assist"]:
+                            answer["assist"].append(assist_word)
+                    answer["content"].append(tem_dict)
+                    result.append((word, answer, True))
+            return result
+        raise NoSupportVersionException("答案解析", version)
+
+    @classmethod
+    async def _get_detail_by_word(cls, course_id: str, list_id: str, word: str) \
+            -> list[tuple[str, Union[dict, None], bool]]:
+
         timeout = _settings.timeout
         data = {
             "course_id": course_id,
@@ -456,11 +538,6 @@ class Course:
             "timestamp": Tool.time(),
             "versions": CDR_VERSION
         }
-        (await requests.options(
-            url='https://gateway.vocabgo.com/Student/Course/StudyWordInfo',
-            params=data,
-            headers=_settings.header,
-            timeout=timeout)).close()
         res = await requests.get(
             url='https://gateway.vocabgo.com/Student/Course/StudyWordInfo',
             params=data,
@@ -476,6 +553,7 @@ class Course:
         res.close()
         answer = {
             "content": [],
+            "extra": False,
             "assist": [],
         }
         data_version = int(data["version"])
@@ -491,7 +569,7 @@ class Course:
             tem_dict["example"] = {}
             #   辅助单词列表，存放当前单词例句中的不同时态
             #   处理答案
-            for phrase in cls._process_phrase(content, data_version):
+            for phrase in cls._process_phrase(word, content, data_version):
                 #   因不同短语可能具有相同的翻译，需做额外处理
                 if tem_dict["phrase"].get(phrase["key"]) is None:
                     tem_dict["phrase"][phrase["key"]] = []
@@ -500,11 +578,14 @@ class Course:
                     cls._remove_word_in_phrase(phrase["value"], word, phrase["key"])
                 )
                 tem_dict["phrase"][phrase["key"]].extend(cls._force_add_phrase(word, phrase["key"]))
-            for example in cls._process_example(content, data_version):
+            for example in cls._process_example(word, content, data_version):
                 value = example["value"]
                 tem_dict["example"][example["key"]] = value
                 assist_word = value[value.find("{") + 1: value.find("}")]
                 if assist_word not in answer["assist"]:
                     answer["assist"].append(assist_word)
             answer["content"].append(tem_dict)
-        return answer
+
+        result: list[tuple[str, Union[dict, None], bool]] = [(word, answer, True)]
+        result.extend(cls._process_extra_word_info(data, data_version))
+        return result

@@ -34,6 +34,17 @@ class Tool:
         return await asyncio.gather(*task_list, loop=loop)
 
     @staticmethod
+    def get_most_similar_word_in_list(aim_word: str, aim_list: list) -> str:
+        max_ratio = 0.0
+        word = ""
+        for value in aim_list:
+            value_ratio = difflib.SequenceMatcher(None, aim_word, value).quick_ratio()
+            if max_ratio < value_ratio:
+                max_ratio = value_ratio
+                word = value
+        return word
+
+    @staticmethod
     def get_ratio_between_str(str_a: str, str_b: str) -> float:
         return difflib.SequenceMatcher(None, str_a, str_b).quick_ratio()
 
