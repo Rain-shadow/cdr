@@ -35,12 +35,14 @@ def __my_except_hook(exc_type, exc_value, tb):
     _logger.v("")
     _logger.e(msg, is_show=False)
     aiorequset.close_session()
-    network_error = (ReadTimeout, ProxyError, ConnectionError, ConnectionError, NewConnectionError, MaxRetryError,
+    network_error = (ReadTimeout, ConnectionError, ConnectionError, NewConnectionError, MaxRetryError,
                      ServerDisconnectedError, ClientConnectorError)
-    if isinstance(exc_value, network_error):
-        _logger.e("网络不稳定，请待网络恢复后重启程序")
-    elif exc_type == ValueError and str(exc_value) == "check_hostname requires server_hostname":
+    if exc_type == ValueError and str(exc_value) == "check_hostname requires server_hostname" \
+            or isinstance(exc_value, ProxyError) or isinstance(exc_value.reason, ProxyError):
         _logger.e("该软件无法在全局代理开启的情况下运行！")
+    elif isinstance(exc_value, network_error):
+        _logger.e(exc_value)
+        _logger.e("网络不稳定，请待网络恢复后重启程序")
     elif exc_type == KeyboardInterrupt:
         _logger.v("")
         _logger.i("AWSL")
