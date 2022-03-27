@@ -5,8 +5,11 @@
 # @Author: 佚名
 # @File  : cdr_task.py
 import asyncio
+import json
 import sys
 import random
+from typing import Union
+
 from cdr.aio import aiorequset as requests, Tasks
 from cdr.exception import AnswerNotFoundException, AnswerWrong, LoadTaskInfoError, UnknownTypeMode
 from cdr.utils import settings, Answer, Course, Log, Tool
@@ -98,6 +101,9 @@ class CDRTask:
             _logger.v(f"[mode:{topic_mode}]{content}({remark})", end='', is_show=is_show)
         topic_code = data["topic_code"]
         options = data["options"]
+        time_spent = CDRTask.get_random_time(topic_mode, min_time=settings.min_random_time,
+                                             max_time=settings.max_random_time)
+        await asyncio.sleep(time_spent / 1000)
         #   根据获取到的答案与现行答案进行匹配
         skip_times = 0
         has_chance = True
@@ -138,9 +144,6 @@ class CDRTask:
                 has_chance = False
                 _logger.v("   Done！", is_show=is_show)
 
-        time_spent = CDRTask.get_random_time(topic_mode, min_time=settings.min_random_time,
-                                             max_time=settings.max_random_time)
-        await asyncio.sleep(time_spent / 1000)
         timestamp = Tool.time()
         sign = Tool.md5(f"time_spent={time_spent}&timestamp={timestamp}&topic_code={topic_code}"
                         + f"&versions={CDR_VERSION}ajfajfamsnfaflfasakljdlalkflak")
@@ -180,24 +183,25 @@ class CDRTask:
                 answer_id = answer.find_answer_by_11(content, remark, options, skip_times)
             elif topic_mode == 13:
                 answer_id = answer.find_answer_by_13(content, remark, options)
-            elif topic_mode == 15 or topic_mode == 16 \
-                    or topic_mode == 21 or topic_mode == 22:
+            elif topic_mode in (15, 16, 21, 22):
                 answer_id = answer.find_answer_by_15(content.strip(), options)
-            elif topic_mode == 17 or topic_mode == 18:
+            elif topic_mode in (17, 18):
                 answer_id = answer.find_answer_by_17(content, options)
             elif topic_mode == 31:
                 answer_id = answer.find_answer_by_31(remark, options)
             elif topic_mode == 32:
                 answer_id = answer.find_answer_by_32(remark, options,
                                                      Tool.count_character_in_str("_", content), skip_times)
-            elif topic_mode == 41 or topic_mode == 42:
+            elif topic_mode in (41, 42):
                 answer_id = answer.find_answer_by_41(content, remark, options)
-            elif topic_mode == 43 or topic_mode == 44:
+            elif topic_mode in (43, 44):
                 answer_id = answer.find_answer_by_43(content, remark, options)
-            elif topic_mode == 51 or topic_mode == 52:
+            elif topic_mode in (51, 52):
                 answer_id = answer.find_answer_by_51(content, remark, skip_times)
-            elif topic_mode == 53 or topic_mode == 54:
+            elif topic_mode in (53, 54):
                 answer_id = answer.find_answer_by_53(content, remark)
+            elif topic_mode == 73:
+                answer_id = answer.find_answer_by_73(content, remark)
             else:
                 raise UnknownTypeMode(topic_mode)
         except AnswerNotFoundException as e:
@@ -213,7 +217,8 @@ class CDRTask:
         max_time_list = {
             "11": 20, "13": 35, "15": 15, "16": 15, "17": 10, "18": 10,
             "21": 15, "22": 15, "31": 25, "32": 20, "41": 25, "42": 25,
-            "43": 30, "44": 30, "51": 25, "52": 25, "53": 35, "54": 35
+            "43": 30, "44": 30, "51": 25, "52": 25, "53": 35, "54": 35,
+            "73": 20
         }
         if is_max:
             return max_time_list[str(topic_mode)] * 1000
@@ -244,8 +249,10 @@ class CDRTask:
             max_score = 1000
         return random.randint(min_score, max_score) / 10.0
 
-    async def verify_answer(self, answer: str, topic_code: str, task_id: int):
+    async def verify_answer(self, answer: Union[str, list], topic_code: str, task_id: int):
         timestamp = Tool.time()
+        if isinstance(answer, list):
+            answer = json.dumps(answer, separators=(',', ':'))
         sign = Tool.md5(f"answer={answer}&timestamp={timestamp}&topic_code={topic_code}"
                         + f"&versions={CDR_VERSION}ajfajfamsnfaflfasakljdlalkflak")
         data = {

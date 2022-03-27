@@ -35,10 +35,10 @@ def __my_except_hook(exc_type, exc_value, tb):
     _logger.v("")
     _logger.e(msg, is_show=False)
     aiorequset.close_session()
-    network_error = (ReadTimeout, ConnectionError, ConnectionError, NewConnectionError, MaxRetryError,
+    network_error = (ReadTimeout, ConnectionError, NewConnectionError, MaxRetryError,
                      ServerDisconnectedError, ClientConnectorError)
     if exc_type == ValueError and str(exc_value) == "check_hostname requires server_hostname" \
-            or isinstance(exc_value, ProxyError) or isinstance(exc_value.reason, ProxyError):
+            or isinstance(exc_value, ProxyError):
         _logger.e("该软件无法在全局代理开启的情况下运行！")
     elif isinstance(exc_value, network_error):
         _logger.e(exc_value)

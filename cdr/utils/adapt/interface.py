@@ -247,10 +247,11 @@ class AnswerPattern1(IOrigin):
             for tem_value in re.split(r"\s+", option["content"].strip()):
                 tem_map[tem_value] = index
         for word in phrase:
-            if len(result) == 0 or tem_map[result[len(result) - 1]] != tem_map.get(word):
+            if len(result) == 0 or tem_map.get(result[len(result) - 1]) != tem_map.get(word):
                 result.append(word)
             else:
-                result[len(result) - 1] = options[tem_map[word]]["content"]
+                result[len(result) - 1] = Tool.get_most_similar_word_in_list(
+                    result[len(result) - 1] + word, list(tem_map.keys()))
         return ",".join(result)
 
     @staticmethod

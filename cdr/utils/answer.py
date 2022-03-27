@@ -346,3 +346,21 @@ class Answer:
                         if content.find("{") == sentence.find("{"):
                             return sentence[sentence.find("{") + 1:sentence.find("}")]
         raise AnswerNotFoundException(53)
+
+    # content 思政“单词”
+    # remark “单词”翻译
+    # 目前该题型仅为思政单词服务，其答案查找逻辑暂定
+    def find_answer_by_73(self, content: str, remark: str) -> list:
+        from urllib.parse import unquote
+        for word, word_info in self._course.data.items():
+            for word_content in word_info["content"]:
+                if word_content["mean"] != remark:
+                    continue
+                result = []
+                tem_list = re.findall(r"(\w+|\{.+?\})", content)
+                for index, answer in enumerate(unquote(word).split(" ")):
+                    if tem_list[index] != answer:
+                        result.append(answer)
+                if len(result) != 0:
+                    return result
+        raise AnswerNotFoundException(73)

@@ -419,10 +419,18 @@ class Course:
                         "value": phrase_value.split(" ")
                     })
             if version == 3:
+                target_phrase = unquote(word)
+                target_phrase = re.sub(r"[.…,-]", " ", target_phrase)
+                target_phrase = " ".join(target_phrase.split())
                 result.append({
                     "key": content_data["mean"][1],
-                    "value": unquote(word).split(" ")
+                    "value": target_phrase.split(" ")
                 })
+                # if target_phrase.find("-") != -1:
+                #     result.append({
+                #         "key": content_data["mean"][1],
+                #         "value": target_phrase.replace("-", " ").split(" ")
+                #     })
         else:
             raise NoSupportVersionException("答案解析", version)
         for phrase in phrases:
