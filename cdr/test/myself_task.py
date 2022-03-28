@@ -73,7 +73,6 @@ class MyselfTask(CDRTask):
         is_random_score = settings.is_random_score
         is_show = not settings.is_multiple_chapter
         if task["score"] != 100:
-            task_id = task["task_id"]
             now_score = CDRTask.get_random_score(is_open=is_random_score)
             _logger.i("course_id:" + course_id, is_show=False)
             _logger.d(course.data)
@@ -88,24 +87,10 @@ class MyselfTask(CDRTask):
                     break
                 _logger.i("模拟加载流程", is_show=is_show)
                 #   模拟加载流程
-                data = {
-                    "task_id": task_id,
-                    "course_id": task['course_id'],
-                    "list_id": task['list_id'],
-                    "timestamp": Tool.time(),
-                    "versions": CDR_VERSION,
-                }
-                res = await requests.get(url=f"https://gateway.vocabgo.com/Student/StudyTask/Info",
-                                         params=data, headers=settings.header, timeout=time_out)
-                json_data = await res.json()
-                res.close()
+                json_data = await self.get_task_info(task)
                 # 解决ZZ词达人无法根据原本任务ID获取信息，只能通过默认获取。本BUG（这不能算我的BUG啊）由群友239***963提供
                 if json_data["code"] == 0:
-                    data["task_id"] = -1
-                    _logger.v(data)
-                    res = await requests.get(url=f"https://gateway.vocabgo.com/Student/StudyTask/Info",
-                                             params=data, headers=settings.header, timeout=time_out)
-                    json_data = await res.json()
+                    json_data = await self.get_task_info(task)
                 task_id = json_data["data"]["task_id"] or -1
                 grade = json_data["data"]["grade"]
                 await asyncio.sleep(1)
@@ -189,6 +174,20 @@ class MyselfTask(CDRTask):
         else:
             _logger.i(f"该【{task['task_name']}】任务已满分", is_show=is_show)
 
+    async def get_task_info(self, task: dict) -> dict:
+        data = {
+            "task_id": task["task_id"],
+            "course_id": task['course_id'],
+            "list_id": task['list_id'],
+            "timestamp": Tool.time(),
+            "versions": CDR_VERSION,
+        }
+        res = await requests.get(url=f"https://gateway.vocabgo.com/Student/StudyTask/Info",
+                                 params=data, headers=settings.header, timeout=settings.timeout)
+        json_data = await res.json()
+        res.close()
+        return json_data
+
     @staticmethod
     async def get_task_list(course_id):
         time_out = settings.timeout
@@ -202,22 +201,6 @@ class MyselfTask(CDRTask):
         _logger.i(json_data, is_show=False)
         res.close()
         return json_data['task_list'], json_data
-
-    @staticmethod
-    async def get_task_id(task_id: int, release_id: int) -> int:
-        # TODO 该方法似乎未被使用
-        count = 0
-        while task_id == -1 and count < 5:
-            res = await requests.get(f"https://gateway.vocabgo.com/Student/StudyTask/Info?task_id={task_id:d}"
-                                     f"&release_id={release_id:d}&timestamp={Tool.time()}&versions={CDR_VERSION}",
-                                     headers=settings.header, timeout=settings.timeout)
-            json_data = await res.json()
-            res.close()
-            if json_data["code"] == 1:
-                task_id = json_data["data"]["task_id"]
-            _logger.i(f"task_id:{task_id:d},count:{count:d}", is_show=False)
-            count = count + 1
-        return task_id
 
     @staticmethod
     async def choose_word(task: dict, task_id: int, grade: int) -> bool:

@@ -111,7 +111,7 @@ class ClassTask(CDRTask):
                     _logger.w("相同任务重复答题次数过多，疑似存在无法找到答案的题目，跳过该任务", is_show=is_show)
                     break
                 _logger.i("模拟加载流程", is_show=is_show)
-                task_id = await ClassTask.get_task_id(task)
+                task_id = await self.get_task_id(task)
                 if task_type == 1:
                     #   模拟加载流程
                     _logger.i("班级-学习任务", is_show=is_show)
@@ -211,6 +211,19 @@ class ClassTask(CDRTask):
         else:
             _logger.i(f"该【{task['task_name']}】任务未开始")
 
+    async def get_task_info(self, task: dict) -> dict:
+        data = {
+            "task_id": task["task_id"],
+            "release_id": task["release_id"],
+            "timestamp": Tool.time(),
+            "versions": CDR_VERSION,
+        }
+        res = await requests.get("https://gateway.vocabgo.com/Student/ClassTask/Info",
+                                 params=data, headers=settings.header, timeout=settings.timeout)
+        json_data = await res.json()
+        res.close()
+        return json_data
+
     @staticmethod
     async def get_task_list():
         time_out = settings.timeout
@@ -251,22 +264,10 @@ class ClassTask(CDRTask):
                 count += 1
         return tem_list
 
-    @staticmethod
-    async def get_task_id(task: dict) -> int:
+    async def get_task_id(self, task: dict) -> int:
         if task["task_id"] != -1:
             return task["task_id"]
-        data = {
-            "task_id": task["task_id"],
-            "release_id": task["release_id"],
-            "timestamp": Tool.time(),
-            "versions": CDR_VERSION,
-        }
-        (await requests.options("https://gateway.vocabgo.com/Student/ClassTask/Info",
-                                params=data, headers=settings.header, timeout=settings.timeout)).close()
-        res = await requests.get("https://gateway.vocabgo.com/Student/ClassTask/Info",
-                                 params=data, headers=settings.header, timeout=settings.timeout)
-        json_data = (await res.json())
-        res.close()
+        json_data = (await self.get_task_info(task))
         if json_data["code"] == 1:
             return json_data["data"]["task_id"]
         for task_info in await ClassTask.get_task_list():
@@ -274,10 +275,13 @@ class ClassTask(CDRTask):
                 if task_info["task_id"] != -1:
                     return task_info["task_id"]
                 break
-        data["timestamp"] = Tool.time()
-        data["task_type"] = task["task_type"]
-        (await requests.options(url='https://gateway.vocabgo.com/Student/ClassTask/StartAnswer',
-                                headers=settings.header, params=data, timeout=settings.timeout)).close()
+        data = {
+            "task_id": task["task_id"],
+            "task_type": task["task_type"],
+            "release_id": task["release_id"],
+            "timestamp": Tool.time(),
+            "versions": CDR_VERSION,
+        }
         res = await requests.get(url='https://gateway.vocabgo.com/Student/ClassTask/StartAnswer',
                                  headers=settings.header, params=data, timeout=settings.timeout)
         json_data = await res.json()

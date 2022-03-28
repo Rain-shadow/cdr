@@ -53,6 +53,9 @@ class CDRTask:
     async def do_task(self, task: dict, course_id: str, course: Course):
         pass
 
+    async def get_task_info(self, task: dict) -> dict:
+        pass
+
     async def get_course_by_task(self, task) -> Course:
         return await Course.load_course(words=(await self.get_load_words(task)))
 
