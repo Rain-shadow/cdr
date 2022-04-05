@@ -79,6 +79,16 @@ class AnswerAdapter:
             result = cls.process_option_phrase(result)
         return result
 
+    # 无则返回[phrase]
+    def process_answer_phrase(self, phrase: list[str]) -> list[list[str]]:
+        result = [phrase]
+        for cls in self.__interfaces:
+            tem = cls.process_answer_phrase(phrase)
+            if tem is not None:
+                result.append(tem)
+        return result
+
+
     # 无则返回None
     def answer_11_1(self, remark: str, skip_times: int, options: list, answer_list: list) -> str:
         for cls in self.__interfaces:
@@ -142,9 +152,9 @@ class AnswerAdapter:
                 return result
 
     # 无则返回None
-    def answer_32_4(self, content: str, remark: str, options: list, blank_count: int, skip_times: int) -> str:
+    def answer_32_4(self, content: str, remark: str, options: list, blank_count: int, skip_times: int, answer_dict: dict) -> str:
         for cls in self.__interfaces:
-            result = cls.answer_32_4(content, remark, options, blank_count, skip_times, self)
+            result = cls.answer_32_4(content, remark, options, blank_count, skip_times, answer_dict, self)
             if result:
                 return result
 

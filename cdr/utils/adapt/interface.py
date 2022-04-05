@@ -53,6 +53,11 @@ class IOrigin:
     def process_option_phrase(phrase: str) -> str:
         return phrase
 
+    # 处理题库中短语单词自带逗号的问题
+    @staticmethod
+    def process_answer_phrase(phrase: list[str]) -> list[str]:
+        pass
+
     # 处理题型11中精确匹配失败的情况
     # 为例句翻译添加模糊匹配
     @staticmethod
@@ -105,7 +110,7 @@ class IOrigin:
 
     # 处理题型32，题目中倍数包含一部分短语的问题
     @staticmethod
-    def answer_32_4(content: str, remark: str, options: list, blank_count: int, skip_times: int, adapter) -> str:
+    def answer_32_4(content: str, remark: str, options: list, blank_count: int, skip_times: int, answer_dict: dict, adapter) -> str:
         pass
 
     @staticmethod
@@ -180,6 +185,15 @@ class AnswerPattern1(IOrigin):
         tem = re.sub(r"[\ue000-\uefff()]", "", phrase)
         tem = tem.replace('.', ' ').replace("…", " ").replace("-", " ").replace(",", " ").replace("\n", "").strip()
         return " ".join(tem.split())
+
+    @staticmethod
+    def process_answer_phrase(phrase: list[str]) -> list[str]:
+        if " ".join(phrase).find(",") == -1:
+            return None
+        result = []
+        for phrase_word in phrase:
+            result.append(re.sub(",", "", phrase_word))
+        return result
 
     # 模糊匹配
     @staticmethod
@@ -312,9 +326,71 @@ class AnswerPattern1(IOrigin):
                     return adapter.answer_32_2(options, real_phrase)
 
     @staticmethod
-    def answer_32_4(content: str, remark: str, options: list, blank_count: int, skip_times: int, adapter) -> str:
+    def answer_32_4(question_content: str, remark: str, options: list, blank_count: int, skip_times: int, answer_dict: dict, adapter) -> str:
+        content_list = re.split("\s+", question_content)
         # 选项预处理
-        pass
+        option_list = []  # 存放选项中的短语，短语由规定顺序的单词数组构成
+        for phrase in options:
+            content, _ = adapter.process_content_and_remark(phrase["content"], None)
+            option_list.extend(re.split(r"\s+", adapter.process_option_phrase(content)))
+        for content_word in content_list:
+            if content_word.find("_") == -1:
+                option_list.extend(re.split(r"\s+", adapter.process_option_phrase(content_word)))
+        option_set = Set(option_list)
+        wrong_set = set()
+
+        for key, value in answer_dict.items():
+            for content in value["content"]:
+                phrase_list = content["phrase"].get(remark) or adapter.phrase_get_remark(content["phrase"], remark)
+                if phrase_list is None:
+                    break
+                for answer_phrase in phrase_list:
+                    for phrase in adapter.process_answer_phrase(answer_phrase):
+                        if len(option_set & Set(phrase)) == len(phrase):
+                            if skip_times != 0 or adapter.answer_32_2(options, phrase) in wrong_set:
+                                skip_times -= 1
+                                wrong_set.add(adapter.answer_32_2(options, phrase))
+                                continue
+                            result_fix = []
+                            if len(content_list) < len(phrase):
+                                # 选项中存在一个选项包含多个单词的情况
+                                # tem_map = {}
+                                # for index, option in enumerate(options):
+                                #     for tem_value in re.split(r"\s+", option["content"].strip()):
+                                #         tem_map[tem_value] = {
+                                #             "index": index,
+                                #             "origin": option["content"]
+                                #         }
+                                # last_index = 0
+                                # fix_index = 0
+                                # skip = 0
+                                # for word in phrase:
+                                #     if question_content.find(word, last_index) != -1:
+                                #         last_index = question_content.find(word) + len(word)
+                                #         continue
+                                #     if skip != 0:
+                                #         skip = skip - 1
+                                #         continue
+                                #     if len(result_fix) == 0 \
+                                #             or tem_map.get(word) \
+                                #             and (
+                                #             tem_map.get(result_fix[-1])
+                                #             and tem_map[result_fix[-1]]["index"] != tem_map[word]["index"] \
+                                #         or tem_map[word]["index"] ==
+                                #     ):
+                                #         result_fix.append(word)
+                                #     else:
+                                #         fix_index = fix_index + 1
+                                #         result_fix[-1] = tem_map[word]["origin"]
+                                #         skip = len(tem_map[word]["origin"].split(" ")) - 2
+                                # return ",".join(result_fix)
+                                return None
+                            for index, phrase_word in enumerate(phrase):
+                                if content_list[index].find("_") != -1:
+                                    result_fix.append(phrase_word)
+                            if len(result_fix) != blank_count:
+                                break
+                            return ",".join(result_fix)
 
     @staticmethod
     def answer_51(option_word: str, word: str) -> str:

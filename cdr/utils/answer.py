@@ -172,7 +172,7 @@ class Answer:
     # remark 单词的短语翻译
     # options 题目选项
     # blank_count 填空所需单词数量
-    def find_answer_by_32(self, content: str, remark: str, options: list, blank_count: int, skip_times: int) -> str:
+    def find_answer_by_32(self, question_content: str, remark: str, options: list, blank_count: int, skip_times: int) -> str:
         _logger.d("\nfind_answer_by_32")
         _logger.d(remark)
         _logger.d(options)
@@ -213,7 +213,7 @@ class Answer:
                     vague_answer = adapter.answer_32_3(options, phrase_list, blank_count, skip_times)
                     if vague_answer:
                         return vague_answer
-        vague_answer = adapter.answer_32_4(content, remark, options, blank_count, skip_times)
+        vague_answer = adapter.answer_32_4(question_content, remark, options, blank_count, skip_times, self._course.data)
         if vague_answer:
             return vague_answer
         raise AnswerNotFoundException(32)
