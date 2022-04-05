@@ -98,6 +98,16 @@ class IOrigin:
         """
         pass
 
+    # 处理题型32，题库短语比选项多出一个a/an/the或者题库短语比选项少一个a/an/the
+    @staticmethod
+    def answer_32_3(options: list, phrase_list: list[list], blank_count: int, skip_times: int, adapter) -> str:
+        pass
+
+    # 处理题型32，题目中倍数包含一部分短语的问题
+    @staticmethod
+    def answer_32_4(content: str, remark: str, options: list, blank_count: int, skip_times: int, adapter) -> str:
+        pass
+
     @staticmethod
     def answer_51(option_word: str, word: str) -> str:
         return word
@@ -261,6 +271,50 @@ class AnswerPattern1(IOrigin):
                 if value == AnswerPattern1.process_option_phrase(v["content"]):
                     phrase[index] = v["content"]
         return ",".join(phrase)
+
+    @staticmethod
+    def answer_32_3(options: list, phrase_list: list[list], blank_count: int, skip_times: int, adapter) -> str:
+        flag = ["a", "an", "the"]
+        # 选项预处理
+        option_list = []  # 存放选项中的短语，短语由规定顺序的单词数组构成
+        for phrase in options:
+            content, _ = adapter.process_content_and_remark(phrase["content"], None)
+            option_list.extend(re.split(r"\s+", adapter.process_option_phrase(content)))
+        option_set = Set(option_list)
+        wrong_set = set()
+
+        for phrase in phrase_list:
+            # 题库短语比选项多出一个a/an/the
+            if len(option_set & Set(phrase)) == len(phrase) - 1 and phrase[0] in flag:
+                if skip_times != 0 or adapter.answer_32_2(options, phrase) in wrong_set:
+                    skip_times -= 1
+                    wrong_set.add(adapter.answer_32_2(options, phrase))
+                    continue
+                phrase = phrase[1:]
+                if len(phrase) == blank_count:
+                    # 因原选项中可能会出现多出空格问题
+                    return adapter.answer_32_2(options, phrase)
+            # 题库短语比选项少出一个a/an/the
+            if len(option_set & Set(phrase)) == len(phrase) and len(set(option_list) & set(flag)) != 0:
+                for word in flag:
+                    real_phrase = phrase.copy()
+                    real_phrase.insert(0, word)
+                    if len(option_set & Set(real_phrase)) == len(phrase) + 1:
+                        break
+                else:
+                    break
+                if skip_times != 0 or adapter.answer_32_2(options, real_phrase) in wrong_set:
+                    skip_times -= 1
+                    wrong_set.add(adapter.answer_32_2(options, real_phrase))
+                    continue
+                if len(real_phrase) == blank_count:
+                    # 因原选项中可能会出现多出空格问题
+                    return adapter.answer_32_2(options, real_phrase)
+
+    @staticmethod
+    def answer_32_4(content: str, remark: str, options: list, blank_count: int, skip_times: int, adapter) -> str:
+        # 选项预处理
+        pass
 
     @staticmethod
     def answer_51(option_word: str, word: str) -> str:

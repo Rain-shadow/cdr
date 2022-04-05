@@ -134,6 +134,20 @@ class AnswerAdapter:
             if result:
                 return result
 
+    # 无则返回None
+    def answer_32_3(self, options: list, phrase_list: list[list], blank_count: int, skip_times: int) -> str:
+        for cls in self.__interfaces:
+            result = cls.answer_32_3(options, phrase_list, blank_count, skip_times, self)
+            if result:
+                return result
+
+    # 无则返回None
+    def answer_32_4(self, content: str, remark: str, options: list, blank_count: int, skip_times: int) -> str:
+        for cls in self.__interfaces:
+            result = cls.answer_32_4(content, remark, options, blank_count, skip_times, self)
+            if result:
+                return result
+
     # 无则返回word
     def answer_51(self, option_word: str, word: str) -> str:
         for cls in self.__interfaces:

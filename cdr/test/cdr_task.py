@@ -193,7 +193,7 @@ class CDRTask:
             elif topic_mode == 31:
                 answer_id = answer.find_answer_by_31(remark, options)
             elif topic_mode == 32:
-                answer_id = answer.find_answer_by_32(remark, options,
+                answer_id = answer.find_answer_by_32(content, remark, options,
                                                      Tool.count_character_in_str("_", content), skip_times)
             elif topic_mode in (41, 42):
                 answer_id = answer.find_answer_by_41(content, remark, options)
