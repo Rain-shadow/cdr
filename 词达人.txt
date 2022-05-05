@@ -1,0 +1,98 @@
+查题接口1：
+	GET https://gateway.vocabgo.com/Student/Course/StudyWordInfo?course_id=CET4_1&list_id=CET4_1_01&word=state
+	必要参数:
+		course_id，list_id，word
+查题接口2：(该接口在班级测试任务中无效)
+	POST https://gateway.vocabgo.com/Student/Course/GetStudyWordInfo
+	必要参数:
+		sign(本地计算)，timestamp，topic_code(可由当前题型获取，该参数中存储这当前题目所考察的单词)
+		sign=md5(timestamp=time&topic_code=code&versions=1.1.0ajfajfamsnfaflfasakljdlalkflak)
+			time: 毫秒级别的时间戳
+
+获取课程所有列表：
+	GET https://gateway.vocabgo.com/Teacher/Course/UnitList?course_id=CET4_2&timestamp=1588045191786&versions=1.0
+获取课程列表中所有单词：
+	GET https://gateway.vocabgo.com/Teacher/Course/UnitWordList?config_id=-1&course_id=CET4_2&list_id=CET4_2_01&timestamp=1588045195558&versions=1.0
+获取课程所有单词：
+	GET https://resource.vocabgo.com/Resource/CoursePage/CET6_hx.json
+	无需userToken
+
+获取指定班级任务中所包含的单词
+	GET https://gateway.vocabgo.com/Student/ClassTask/Info?task_id=40458773&release_id=1009505&timestamp=1633921810480&versions=1.2.0
+
+topic_mode:
+	11：
+		根据例句选择对应单词的词义
+		可获取data.stem.content内容，并将{}单词取出作为依据查询（该单词时态不定，应当以辅助列表单词进行查询）
+		data.stem.content为例句
+		data.stem.remark内容为单词的例句翻译，以此为比较查询会方便很多
+		data.options.content为单词词义
+		answer_tag为数字
+		返回格式为数字
+	13:	根据例句选择与例句同列的例句
+		可获取data.stem.content内容，并将{}单词取出作为依据查询（该单词时态不定，应当以辅助列表单词进行查询）
+		data.stem.content为例句
+		data.stem.remark内容为单词的例句翻译，以此为比较查询会方便很多
+		data.options.content为例句
+		answer_tag为数字
+		返回格式为数字
+	15:
+		可获取data.stem.content内容，其直接为单词原型进行查询
+		data.options.content为单词的词义（基本词义），其中该单词词义必定只有一个
+		answer_tag为数字
+		返回格式为数字
+	16:
+		与15一致，15只考察单词的一种词义，而16会以多个题目来考察单个单词的全部词义
+	17：
+		data.stem.content内容为单词的词义（基本词义），可以data.options.content为依据查询进行对比
+		data.options.content为单词原型
+		answer_tag为数字
+		返回格式为数字
+	18：
+		与17一致，17只考察单词的一种词义，而18会以多个题目来考察单个单词的全部词义
+	21:
+		与15一致，该题型用听力进行考察
+	22：
+		与21一致，21只考察单词的一种词义，而22会以多个题目来考察单个单词的全部词义
+	31:
+		根据例单词的相关短语，选择单词的短语中的其他单词，该题需选一个单词验证一次，最后全部验证完后用最后一个单词的topic_code作为参数提交
+		可由data.stem.remark:[{...}, {...}, {...}]（其为列表）中的relation（单词原型）与data.options.content直接进行比较
+		data.options.content无关单词原型
+	32：
+		该题型最麻烦，得逐个比较所有单词的短语来进行确认
+		data.stem.remark内容为单词的短语翻译，只能以此为依据进行不断对比
+		返回格式为多个单词以逗号连接，如："admit,somebody,to,that"
+	41:
+		data.stem.content为例句
+		data.stem.remark内容为单词的例句翻译，可以data.options.content为依据查询进行对比
+		data.options.content为单词原型/多态
+		answer_tag为数字
+		返回格式为数字
+	42：
+		与41一致，41只考察单词的一种词义，而42会以多个题目来考察单个单词的全部词义
+	43：
+		data.stem.remark内容为单词的例句翻译，可以data.options.content为依据查询进行对比
+		确认例句后取出例句中的{单词}，以此为依据去比较sub_options.content
+		data.options.content为单词原型
+		data.options.sub_options.content为单词其他时态
+		answer_tag为字符串，如："0#"
+		sub_options.content.answer_tag为数字
+		返回格式为answer_tag#sub_options.content.answer_tag，如："0#1"
+	44:
+		与43一致，43只考察单词的一种词义，而44会以多个题目来考察单个单词的全部词义+曲折变化（该描述为官方自带，尚不清楚其含义）
+	51:
+		data.stem.remark内容为单词的短语翻译，只能以此为依据进行不断对比
+		data.options.content为单词短语，但{}中的单词不存在
+		data.stem.w_len为单词长度
+		data.stem.w_tip为单词前2个字母的提示
+		返回格式为短语中的{}单词
+	52:
+		与51一致，51只考察单词的一种词义，而52会以多个题目来考察单个单词的全部词义
+	53:
+		data.stem.remark内容为单词的例句翻译，只能以此为依据进行不断对比
+		data.options.content为单词短语，但{}中的单词不存在
+		data.stem.w_len为单词长度
+		data.stem.w_tip为单词前n个字母的提示
+		返回格式为短语中的{}单词
+	54:
+		与53一致，53只考察单词的一种词义，而54会以多个题目来考察单个单词的全部词义

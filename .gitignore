@@ -12,7 +12,7 @@ config/
 data/
 log/
 dist/
-*.txt
+file_version_info.txt
 !requirements.txt
 *.json
 *.ico
