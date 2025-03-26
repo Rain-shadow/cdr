@@ -14,9 +14,14 @@ from cdr.utils import Log
 from cdr.request.network_error import NetworkError
 from cdr.request.upper_limit_error import UpperLimitError
 
-__s = aiohttp.ClientSession()
+__s = None
 _logger = Log.get_logger()
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+async def init_session():
+    global __s
+    __s = aiohttp.ClientSession()
 
 
 async def __judge_code(res: aiohttp.ClientResponse) -> aiohttp.ClientResponse:
@@ -54,6 +59,9 @@ async def post(url, data=None, json=None, **kwargs) -> aiohttp.ClientResponse:
         return await __judge_code(res)
 
 
-def close_session():
-    loop = asyncio.get_event_loop()
-    asyncio.run_coroutine_threadsafe(__s.close(), loop)
+async def close_session():
+    global __s
+    if __s:
+        await __s.close()
+
+    
